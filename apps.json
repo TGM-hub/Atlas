@@ -1,0 +1,287 @@
+{
+  "_doc": "Inventaire des trainers GeoGuessr. status: live | wip | local | idea. scope: country | world. types = clés de config.json.",
+  "apps": [
+    {
+      "id": "sign-reader",
+      "name": {
+        "en": "Sign Reader",
+        "fr": "Lecteur de panneaux"
+      },
+      "repo": "TGM-hub/script-identifier-geoguessr",
+      "url": "https://tgm-hub.github.io/script-identifier-geoguessr/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "world",
+      "countries": [],
+      "types": [
+        "language",
+        "sign"
+      ]
+    },
+    {
+      "id": "ddd-brasil",
+      "name": {
+        "en": "DDD Brasil",
+        "fr": "DDD Brésil"
+      },
+      "repo": "TGM-hub/brasil-phone-code",
+      "url": "https://tgm-hub.github.io/brasil-phone-code/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "country",
+      "countries": [
+        "BR"
+      ],
+      "types": [
+        "phone"
+      ]
+    },
+    {
+      "id": "vietnam-provinces",
+      "name": {
+        "en": "Vietnam provinces",
+        "fr": "Provinces du Vietnam"
+      },
+      "repo": "TGM-hub/vietnam-province-guesser",
+      "url": "https://tgm-hub.github.io/vietnam-province-guesser/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "country",
+      "countries": [
+        "VN"
+      ],
+      "types": [
+        "other"
+      ]
+    },
+    {
+      "id": "bollards",
+      "name": {
+        "en": "Bollards",
+        "fr": "Bornes (bollards)"
+      },
+      "repo": "TGM-hub/bollards-trainer",
+      "url": "https://tgm-hub.github.io/bollards-trainer/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "world",
+      "countries": [
+        "AD",
+        "AE",
+        "AL",
+        "AR",
+        "AT",
+        "AU",
+        "AX",
+        "BA",
+        "BD",
+        "BE",
+        "BG",
+        "BM",
+        "BO",
+        "BR",
+        "BT",
+        "BW",
+        "BY",
+        "CA",
+        "CC",
+        "CH",
+        "CL",
+        "CO",
+        "CR",
+        "CX",
+        "CY",
+        "CZ",
+        "DE",
+        "DK",
+        "EC",
+        "EE",
+        "ES",
+        "FI",
+        "FO",
+        "FR",
+        "GB",
+        "GH",
+        "GI",
+        "GL",
+        "GR",
+        "GT",
+        "HK",
+        "HR",
+        "HU",
+        "ID",
+        "IE",
+        "IL",
+        "IM",
+        "IN",
+        "IS",
+        "IT",
+        "JE",
+        "JO",
+        "JP",
+        "KE",
+        "KG",
+        "KH",
+        "KR",
+        "KZ",
+        "LA",
+        "LB",
+        "LI",
+        "LK",
+        "LS",
+        "LT",
+        "LU",
+        "LV",
+        "MC",
+        "ME",
+        "MK",
+        "MN",
+        "MT",
+        "MX",
+        "MY",
+        "NA",
+        "NG",
+        "NL",
+        "NO",
+        "NP",
+        "NZ",
+        "OM",
+        "PA",
+        "PE",
+        "PH",
+        "PL",
+        "PT",
+        "QA",
+        "RE",
+        "RO",
+        "RS",
+        "RU",
+        "RW",
+        "SE",
+        "SG",
+        "SI",
+        "SK",
+        "SM",
+        "SN",
+        "TH",
+        "TN",
+        "TR",
+        "TW",
+        "UA",
+        "UG",
+        "US",
+        "UY",
+        "VN",
+        "ZA"
+      ],
+      "types": [
+        "bollard"
+      ]
+    },
+    {
+      "id": "plates",
+      "name": {
+        "en": "Plate Trainer",
+        "fr": "Plaques d'immatriculation"
+      },
+      "repo": "TGM-hub/plate-trainer",
+      "url": "https://tgm-hub.github.io/plate-trainer/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "world",
+      "countries": [
+        "AD",
+        "AL",
+        "AR",
+        "AS",
+        "AU",
+        "BE",
+        "BO",
+        "BR",
+        "BT",
+        "CH",
+        "CL",
+        "CO",
+        "CX",
+        "DK",
+        "EC",
+        "GH",
+        "GR",
+        "HK",
+        "HR",
+        "HU",
+        "ID",
+        "IL",
+        "IM",
+        "IN",
+        "IS",
+        "IT",
+        "JP",
+        "KE",
+        "KG",
+        "LA",
+        "LK",
+        "LU",
+        "MK",
+        "MT",
+        "MY",
+        "NG",
+        "NL",
+        "NO",
+        "PH",
+        "PR",
+        "PS",
+        "PT",
+        "QA",
+        "RU",
+        "RW",
+        "SN",
+        "TH",
+        "TN",
+        "UA",
+        "UG",
+        "US"
+      ],
+      "types": [
+        "plate"
+      ]
+    },
+    {
+      "id": "japan-phone",
+      "name": {
+        "en": "Japan area codes",
+        "fr": "Indicatifs japonais"
+      },
+      "repo": "TGM-hub/japan-phone-code",
+      "url": "https://tgm-hub.github.io/japan-phone-code/",
+      "status": "wip",
+      "visibility": "public",
+      "scope": "country",
+      "countries": [
+        "JP"
+      ],
+      "types": [
+        "phone"
+      ]
+    },
+    {
+      "id": "cyrillic-signs",
+      "name": {
+        "en": "Cyrillic signs",
+        "fr": "Panneaux cyrilliques"
+      },
+      "repo": "TGM-hub/russian-pannels-learning",
+      "url": "https://tgm-hub.github.io/russian-pannels-learning/",
+      "status": "wip",
+      "visibility": "public",
+      "scope": "country",
+      "countries": [
+        "RU"
+      ],
+      "types": [
+        "language",
+        "sign"
+      ]
+    }
+  ]
+}

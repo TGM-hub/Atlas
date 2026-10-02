@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeoGuessr Atlas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<style>
+  :root {
+    --ocean: #12283a;
+    --land: #264457;
+    --land-hover: #35596f;
+    --sign: #f2c94c;
+    --sign-soft: #b8974a;
+    --sea-glass: #7cc7b4;
+    --ink: #e6eef2;
+    --muted: #8ea6b4;
+    --line: #3b5a6d;
+    --panel: #0e2130;
+    --inv-bg: #1a1a1a;
+    --panel-w: clamp(340px, 28vw, 520px);
+    --gutter-left: 0px;
+    --gutter-bottom: 0px;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ocean); color: var(--ink); font-family: var(--font); overflow: hidden; }
+  button, input { font: inherit; color: inherit; }
+  button { background: none; border: 0; cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+
+  #app {
+    height: 100%;
+    display: grid;
+    grid-template-columns: 1fr var(--panel-w);
+    grid-template-rows: auto 1fr;
+    padding: 16px 20px calc(16px + var(--gutter-bottom)) calc(20px + var(--gutter-left));
+    gap: 14px 20px;
+  }
+  #app.board-mode #mapwrap, #app.board-mode #panel { display: none; }
+  #app:not(.board-mode) #board { display: none; }
+
+  /* --- En-tête --- */
+  header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #home { font-size: 22px; font-weight: 700; padding: 2px 10px 2px 0; letter-spacing: -.01em; }
+  #searchBtn {
+    display: inline-flex; align-items: baseline; gap: 10px; min-width: 240px;
+    padding: 6px 12px; border: 1.5px solid var(--line); border-radius: 4px; background: var(--panel); font-size: 15px; text-align: left;
+  }
+  #searchBtn span { color: var(--muted); font-size: 12px; margin-left: auto; }
+  #searchBtn:hover { border-color: var(--sign); }
+  .chip {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    padding: 6px 11px; border: 1.5px solid var(--line); border-radius: 4px;
+    font-size: 15px; color: var(--muted);
+  }
+  .chip b { font-weight: 600; color: var(--ink); }
+  .chip .n { font-size: 12px; font-variant-numeric: tabular-nums; }
+  .chip.empty { opacity: .45; }
+  .chip:hover { border-color: var(--ink); }
+  .chip.on { background: var(--sign); border-color: var(--sign); color: #1b2a33; }
+  .chip.on b { color: #1b2a33; }
+  .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
+  .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
+  #darkToggle { margin-left: auto; }
+
+  /* --- Carte --- */
+  #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
+  #map { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+  #map.dragging { cursor: grabbing; }
+  #map path, #map circle { vector-effect: non-scaling-stroke; stroke: var(--ocean); stroke-width: .6; fill: var(--land); transition: fill .15s; }
+  #map .c1 { fill: var(--sign-soft); }
+  #map .c2 { fill: var(--sign); }
+  #map .hover { fill: var(--land-hover); }
+  #map .c1.hover, #map .c2.hover { fill: #ffe08a; }
+  #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
+  #map .sel { fill: #fff4cc; stroke: #fff; stroke-width: 1.8; }
+  #map circle { stroke-width: 1; }
+  #tip {
+    position: absolute; pointer-events: none; padding: 5px 9px; border-radius: 3px;
+    background: var(--ink); color: #13232e; font-size: 14px; white-space: nowrap;
+    transform: translate(12px, 12px); display: none;
+  }
+  #tip span { color: #5a6f7c; margin-left: 6px; }
+  .ghost { padding: 6px 10px; font-size: 13px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--muted); background: var(--ocean); }
+  .ghost:hover { color: var(--ink); border-color: var(--ink); }
+  #recenter { position: absolute; right: 12px; bottom: 12px; }
+
+  /* --- Panneau et planche --- */
+  #panel, #board { min-height: 0; overflow-y: auto; background: var(--panel); border-radius: 6px; scrollbar-width: thin; scrollbar-color: #33505f transparent; }
+  #panel { padding: 22px 22px 28px; }
+  #board { grid-column: 1 / -1; padding: 24px 28px 32px; }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .head h1 { margin: 0; font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -.01em; }
+  .head .iso { display: inline-block; margin-top: 8px; padding: 2px 7px; border: 1.5px solid var(--muted); border-radius: 3px; font-size: 13px; color: var(--muted); }
+  .head .actions { display: flex; gap: 8px; align-items: center; }
+  .close { font-size: 26px; line-height: 1; color: var(--muted); padding: 0 4px; }
+  .close:hover { color: var(--ink); }
+  h2 { font-size: 17px; font-weight: 600; margin: 22px 0 10px; color: var(--sign); }
+  .group-cluster h2 { color: var(--sea-glass); }
+  #board h2 { font-size: 20px; margin-top: 28px; }
+  #board .grid { columns: 400px; column-gap: 16px; }
+  #board .members { margin-bottom: 20px; }
+  #board .card { break-inside: avoid; }
+  .card { display: block; width: 100%; padding: 0; margin: 0 0 14px; text-align: left; border-radius: 4px; overflow: hidden; background: #fff; }
+  .card.inv-on { background: var(--inv-bg); }
+  .card img { display: block; width: 100%; height: auto; }
+  img.inv { filter: invert(.9) hue-rotate(180deg); }
+  .card .cap { display: flex; gap: 8px; align-items: baseline; background: #16303f; color: var(--ink); padding: 7px 10px; font-size: 14px; }
+  .card .cap small { color: var(--muted); font-size: 12px; }
+  .card .cap .low { margin-left: auto; color: #e3a35a; font-size: 12px; }
+  .card:hover .cap { background: #1e3d4f; }
+  .hint { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 0 0 18px; max-width: 36ch; }
+  .stats { display: flex; gap: 22px; margin: 6px 0 18px; }
+  .stats div { font-size: 34px; font-weight: 700; line-height: 1; }
+  .stats small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 4px; }
+  .members { display: flex; flex-wrap: wrap; gap: 6px; }
+  .members button { padding: 3px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
+  .members button:hover { border-color: var(--ink); }
+  .members button.none { opacity: .5; }
+  /* --- Trainers (accueil) --- */
+  .apps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+  .app { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .app:hover { border-color: var(--sign); background: #16303f; }
+  .app b { font-weight: 600; font-size: 15px; }
+  .app small { color: var(--muted); font-size: 12px; }
+  .app .wip { margin-left: auto; flex: none; padding: 1px 6px; border: 1px solid var(--sign-soft); border-radius: 3px; color: var(--sign-soft); font-size: 11px; }
+  .empty-state { color: var(--muted); font-size: 15px; line-height: 1.5; }
+  kbd { font-family: inherit; font-size: 12px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; }
+
+  /* --- Visionneuse --- */
+  #lightbox { position: fixed; inset: 0; background: rgba(6, 16, 24, .95); display: none; z-index: 10; }
+  #lightbox.open { display: block; }
+  #stage { position: absolute; inset: 0 0 var(--gutter-bottom) var(--gutter-left); overflow: hidden; cursor: grab; touch-action: none; }
+  #stage.dragging { cursor: grabbing; }
+  #stage img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; background: #fff; max-width: none; }
+  #lbbar {
+    position: absolute; left: var(--gutter-left); right: 0; bottom: var(--gutter-bottom);
+    display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+    background: linear-gradient(transparent, rgba(6,16,24,.92));
+  }
+  #lbbar .t { flex: 1; font-size: 17px; }
+  #lbbar .t small { color: var(--muted); margin-left: 8px; font-size: 14px; }
+  #lbbar button { padding: 7px 13px; border: 1.5px solid var(--line); border-radius: 4px; font-size: 15px; background: var(--ocean); }
+  #lbbar button:hover { border-color: var(--ink); }
+  #lbbar button:disabled { opacity: .35; cursor: default; }
+  #lbbar button.on { background: var(--sign); border-color: var(--sign); color: #1b2a33; }
+
+  /* --- Palette de recherche --- */
+  #palette { position: fixed; inset: 0; z-index: 30; background: rgba(6,16,24,.55); display: none; }
+  #palette.open { display: block; }
+  #pbox {
+    position: absolute; left: 50%; top: 12vh; transform: translateX(-50%); width: min(720px, 92vw);
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  }
+  #pinput { width: 100%; padding: 16px 20px; font-size: 22px; background: transparent; border: 0; border-bottom: 1.5px solid var(--line); outline: none; }
+  #pinput::placeholder { color: #5d7787; }
+  #presults { max-height: 60vh; overflow-y: auto; }
+  .pr { display: flex; align-items: center; gap: 14px; width: 100%; padding: 8px 20px; text-align: left; font-size: 16px; }
+  .pr img { width: 72px; height: 48px; object-fit: cover; border-radius: 3px; background: #fff; flex: none; }
+  .pr .ico { width: 72px; height: 48px; flex: none; display: grid; place-items: center; border: 1.5px dashed var(--line); border-radius: 3px; color: var(--muted); font-size: 12px; }
+  .pr .txt { flex: 1; min-width: 0; }
+  .pr .txt small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .pr .kind { color: var(--muted); font-size: 12px; }
+  .pr.active { background: #1e3d4f; box-shadow: inset 3px 0 0 var(--sign); }
+  .pnone { padding: 18px 20px; color: var(--muted); font-size: 15px; }
+  #phelp { padding: 8px 20px; font-size: 12px; color: var(--muted); border-top: 1.5px solid var(--line); }
+
+  /* --- Bande de vignettes dans la visionneuse --- */
+  #strip {
+    position: absolute; left: var(--gutter-left); right: 0; bottom: calc(var(--gutter-bottom) + 58px);
+    display: flex; gap: 8px; justify-content: center; padding: 6px 20px; overflow-x: auto;
+  }
+  #strip button { flex: none; padding: 0; border: 2px solid transparent; border-radius: 4px; overflow: hidden; opacity: .6; background: #fff; }
+  #strip button.cur { border-color: var(--sign); opacity: 1; }
+  #strip button:hover { opacity: 1; }
+  #strip img { display: block; height: 56px; width: auto; }
+  #lbmsg { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #e3a35a; font-size: 15px; }
+
+  @media (max-width: 900px) {
+    #app { grid-template-columns: 1fr; grid-template-rows: auto 45% 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="home" title="Accueil (Échap)">Atlas</button>
+    <button id="searchBtn" title="Rechercher (tape n'importe où)">Rechercher<span>tape au clavier</span></button>
+    <span id="chips" style="display:contents"></span>
+    <button id="darkToggle" class="chip"><b>Cartes sombres</b><span class="n" id="darkState"></span></button>
+  </header>
+  <div id="mapwrap">
+    <svg id="map" role="img" aria-label="Carte du monde"></svg>
+    <div id="tip"></div>
+    <button id="recenter" class="ghost">Recentrer</button>
+  </div>
+  <aside id="panel"></aside>
+  <section id="board"></section>
+</div>
+
+<div id="palette" role="dialog" aria-modal="true">
+  <div id="pbox">
+    <input id="pinput" type="text" placeholder="phone br, plaque pologne, car paraguay…" autocomplete="off" spellcheck="false">
+    <div id="presults" role="listbox"></div>
+    <div id="phelp"><kbd>↑</kbd> <kbd>↓</kbd> choisir, <kbd>Entrée</kbd> ouvrir, <kbd>Échap</kbd> fermer</div>
+  </div>
+</div>
+
+<div id="lightbox" aria-modal="true" role="dialog">
+  <div id="stage"><img id="lbimg" alt="" decoding="async"></div>
+  <div id="strip"></div>
+  <div id="lbmsg"></div>
+  <div id="lbbar">
+    <div class="t" id="lbtitle"></div>
+    <button id="lbinv" title="Inverser les couleurs de cette carte">Sombre</button>
+    <button id="lbfit" title="Ajuster (Espace)">Ajuster</button>
+    <button id="lbprev" title="Précédente (←)">Précédente</button>
+    <button id="lbnext" title="Suivante (→)">Suivante</button>
+    <button id="lbclose" title="Fermer (Échap)">Fermer</button>
+  </div>
+</div>
+
+<script src="map.js"></script>
+<script src="data.js"></script>
+<script>
+(() => {
+  const { types, clusters, cards, apps = [] } = window.ATLAS;
+  const W = window.WORLD;
+  const typeLabel = Object.fromEntries(types.map(t => [t.key, t.label]));
+  const nameOf = iso => W.namesEn[iso] || W.names[iso] || iso;
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const $ = id => document.getElementById(id);
+  const SVGNS = 'http://www.w3.org/2000/svg';
+
+  // ---------- Préférences locales ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem('atlas.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem('atlas.' + k, JSON.stringify(v)); } catch {} },
+  };
+  let dark = store.get('dark', true);
+  const invOverride = store.get('inv', {});
+  const isInv = c => dark && (c.id in invOverride ? invOverride[c.id] : c.invert);
+
+  const state = { country: null, type: null, cluster: null, view: 'map', dailyCard: true };
+  let visible = [];
+
+  const matchType = c => !state.type || c.types.includes(state.type);
+  const countryCards = iso => cards.filter(c => c.countries.includes(iso) && matchType(c));
+  const countAll = iso => cards.filter(c => c.countries.includes(iso)).length;
+
+  // ---------- En-tête : types, clusters, mode sombre ----------
+  function renderChips() {
+    const f = $('chips');
+    f.innerHTML = '';
+    const base = state.country ? cards.filter(c => c.countries.includes(state.country)) : cards;
+    for (const t of types) {
+      const n = base.filter(c => c.types.includes(t.key)).length;
+      if (!n && state.type !== t.key) continue;   // seuls les types qui ont des fiches
+      const b = document.createElement('button');
+      b.className = 'chip' + (state.type === t.key ? ' on' : '') + (n ? '' : ' empty');
+      b.innerHTML = `<b>${t.label}</b><span class="n">${n}</span>`;
+      b.onclick = () => {
+        if (state.type === t.key) { state.type = null; state.view = 'map'; }
+        else { state.type = t.key; state.view = state.country ? state.view : 'board'; }
+        update();
+      };
+      f.appendChild(b);
+    }
+    const keys = Object.keys(clusters);
+    if (keys.length) {
+      f.appendChild(Object.assign(document.createElement('span'), { className: 'sep' }));
+      for (const k of keys) {
+        const b = document.createElement('button');
+        b.className = 'chip cluster' + (state.cluster === k ? ' on' : '');
+        b.innerHTML = `<b>${clusters[k].label}</b>`;
+        b.onclick = () => selectCluster(state.cluster === k ? null : k);
+        f.appendChild(b);
+      }
+    }
+    $('darkState').textContent = dark ? 'oui' : 'non';
+    $('darkToggle').classList.toggle('on', dark);
+  }
+  $('darkToggle').onclick = () => { dark = !dark; store.set('dark', dark); update(); };
+  $('home').onclick = () => reset();
+
+  function reset() { Object.assign(state, { country: null, type: null, cluster: null, view: 'map' }); update(); }
+  function selectCountry(iso) { Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); }
+  function selectCluster(k) { Object.assign(state, { cluster: k, country: null, view: k ? 'board' : 'map' }); update(); }
+  function selectType(t) { Object.assign(state, { type: t, country: null, cluster: null, view: 'board' }); update(); }
+
+  // ---------- Recherche intelligente ----------
+  // Chaque mot de la requête doit correspondre à quelque chose de la fiche :
+  // pays (FR, EN, code ISO), type (libellé + alias), cluster, ou titre.
+  const words = s => norm(s).split(/[^a-z0-9]+/).filter(Boolean);
+  const EXTRA = { GB: ['uk', 'angleterre', 'england', 'ecosse', 'scotland'], US: ['usa', 'etats unis', 'america'], AE: ['uae', 'emirats'], CZ: ['czechia', 'tcheque'], NL: ['hollande', 'holland'], KR: ['coree'], RU: ['russia'], ZA: ['rsa'] };
+  const field = (labels, codes = []) => ({ w: [...new Set(labels.flatMap(words))], codes: codes.map(c => c.toLowerCase()) });
+  const countryField = {};
+  for (const iso of Object.keys(W.names)) countryField[iso] = field([W.names[iso], W.namesEn[iso] || '', ...(EXTRA[iso] || [])], [iso]);
+  const typeField = Object.fromEntries(types.map(t => [t.key, field([t.label, t.key, ...(t.aliases || [])])]));
+  const clusterField = Object.fromEntries(Object.entries(clusters).map(([k, c]) => [k, field([c.label, k, ...(c.aliases || [])])]));
+  const worldField = field(['monde', 'world', 'mondial', 'global']);
+
+  function oneEdit(a, b) {
+    if (Math.abs(a.length - b.length) > 1) return false;
+    let i = 0, j = 0, e = 0;
+    while (i < a.length && j < b.length) {
+      if (a[i] === b[j]) { i++; j++; continue; }
+      if (++e > 1) return false;
+      if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
+    }
+    return e + (a.length - i) + (b.length - j) <= 1;
+  }
+  const subseq = (q, w) => { if (q[0] !== w[0]) return false; let i = 0; for (const ch of w) { if (ch === q[i]) i++; if (i === q.length) return true; } return false; };
+
+  function tokScore(q, f) {
+    let best = f.codes.includes(q) ? 7 : 0;
+    for (const w of f.w) {
+      if (w === q) best = Math.max(best, 6);
+      else if (w.startsWith(q)) best = Math.max(best, q.length >= 2 ? 4.5 : 1.5);
+      else if (q.length >= 4 && (oneEdit(q, w) || oneEdit(q, w.slice(0, q.length)))) best = Math.max(best, 3);
+      else if (q.length >= 2 && q.length <= 4 && subseq(q, w)) best = Math.max(best, 2);
+    }
+    return best;
+  }
+  const cardFields = c => [
+    ...c.countries.map(i => countryField[i]).filter(Boolean),
+    ...c.types.map(t => typeField[t]),
+    ...(c.cluster ? [clusterField[c.cluster]] : []),
+    ...(c.world ? [worldField] : []),
+    field([c.title]),
+  ];
+  function scoreAll(qs, fields) {
+    let total = 0;
+    for (const q of qs) {
+      const best = Math.max(0, ...fields.map(f => tokScore(q, f)));
+      if (!best) return 0;
+      total += best;
+    }
+    return total;
+  }
+
+  function searchAll(text) {
+    const qs = words(text);
+    if (!qs.length) return [];
+    const cardRes = cards.map(c => ({ c, s: scoreAll(qs, cardFields(c)) })).filter(r => r.s)
+      .sort((a, b) => b.s - a.s || a.c.title.localeCompare(b.c.title, 'fr')).slice(0, 8)
+      .map(r => ({ kind: 'card', s: r.s, c: r.c }));
+    const ents = [];
+    for (const iso in countryField) {
+      const s = scoreAll(qs, [countryField[iso]]);
+      if (s) ents.push({ kind: 'country', s: s + (countAll(iso) ? 1 : 0), iso });
+    }
+    for (const t of types) { const s = scoreAll(qs, [typeField[t.key]]); if (s) ents.push({ kind: 'type', s, key: t.key }); }
+    for (const k in clusters) { const s = scoreAll(qs, [clusterField[k]]); if (s) ents.push({ kind: 'cluster', s, key: k }); }
+    // Rien de complet : on montre ce que chaque mot a trouvé seul (« phone bg » → Bulgarie, Bangladesh, Indicatifs tél.)
+    if (!cardRes.length && !ents.length) {
+      for (const q of qs) {
+        for (const iso in countryField) { const s = tokScore(q, countryField[iso]); if (s >= 2) ents.push({ kind: 'country', s: s + (countAll(iso) ? 1 : 0), iso }); }
+        for (const t of types) { const s = tokScore(q, typeField[t.key]); if (s >= 3) ents.push({ kind: 'type', s, key: t.key }); }
+      }
+    }
+    ents.sort((a, b) => b.s - a.s);
+    return [...cardRes, ...ents.slice(0, cardRes.length ? 3 : 6)];
+  }
+
+  // ---------- Palette ----------
+  const palette = $('palette'), pinput = $('pinput'), presults = $('presults');
+  let results = [], active = 0;
+  function openPalette(seed = '') {
+    palette.classList.add('open');
+    pinput.value = seed;
+    pinput.focus();
+    runSearch();
+  }
+  const closePalette = () => { palette.classList.remove('open'); pinput.blur(); };
+  function runSearch() { results = searchAll(pinput.value); active = 0; paintResults(); }
+  function paintResults() {
+    presults.innerHTML = '';
+    if (pinput.value.trim() && !results.length) {
+      presults.innerHTML = '<div class="pnone">Rien trouvé. Essaie un pays (FR, EN ou code ISO) et un type : « phone br », « voiture paraguay ».</div>';
+      return;
+    }
+    results.forEach((r, i) => {
+      const b = document.createElement('button');
+      b.className = 'pr' + (i === active ? ' active' : '');
+      if (r.kind === 'card') {
+        const c = r.c;
+        const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
+        b.innerHTML = `<img src="${enc(c.thumb)}" class="${isInv(c) ? 'inv' : ''}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}</small></span>`;
+      } else {
+        const label = r.kind === 'country' ? nameOf(r.iso) : r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
+        const n = r.kind === 'country' ? countAll(r.iso) : r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
+        const kind = r.kind === 'country' ? r.iso : r.kind === 'type' ? 'type' : 'cluster';
+        b.innerHTML = `<span class="ico">${kind}</span><span class="txt">${label}<small>${n > 1 ? `voir les ${n} fiches` : n ? 'voir la fiche' : 'aucune fiche pour l’instant'}</small></span>`;
+      }
+      b.onmousedown = e => { e.preventDefault(); choose(i); };
+      b.onmousemove = () => { if (active !== i) { active = i; paintResults(); } };
+      presults.appendChild(b);
+    });
+    presults.children[active]?.scrollIntoView({ block: 'nearest' });
+  }
+  function choose(i) {
+    const r = results[i];
+    if (!r) return;
+    const list = results.filter(x => x.kind === 'card').map(x => x.c);
+    closePalette();
+    if (r.kind === 'card') openLb(r.c, list);
+    else if (r.kind === 'country') openCountry(r.iso);
+    else if (r.kind === 'type') selectType(r.key);
+    else selectCluster(r.key);
+  }
+  pinput.addEventListener('input', runSearch);
+  pinput.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { active = Math.min(results.length - 1, active + 1); paintResults(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { active = Math.max(0, active - 1); paintResults(); e.preventDefault(); }
+    else if (e.key === 'Enter') { choose(active); e.preventDefault(); }
+    else if (e.key === 'Escape') { closePalette(); e.preventDefault(); }
+    e.stopPropagation();
+  });
+  palette.addEventListener('mousedown', e => { if (e.target === palette) closePalette(); });
+  $('searchBtn').onclick = () => openPalette();
+
+  // Un pays : sa première fiche s'ouvre directement, les autres sont dans la bande
+  // Un pays : une seule fiche, elle s'ouvre ; plusieurs, la planche du pays (un clic par fiche)
+  function openCountry(iso) {
+    const n = countAll(iso);
+    Object.assign(state, { country: iso, cluster: null, type: null, view: n > 1 ? 'board' : 'map' });
+    update();
+    if (n === 1) openLb(visible[0]);
+  }
+
+  // ---------- Carte ----------
+  const svg = $('map'), tip = $('tip');
+  const g = document.createElementNS(SVGNS, 'g');
+  svg.appendChild(g);
+  const shapes = {};
+  for (const c of W.countries) {
+    const p = document.createElementNS(SVGNS, 'path');
+    p.setAttribute('d', c.d); p.dataset.iso = c.iso;
+    g.appendChild(p); shapes[c.iso] = [p];
+  }
+  const dots = document.createElementNS(SVGNS, 'g');
+  g.appendChild(dots);
+  for (const c of W.countries.filter(c => c.small)) {
+    const d = document.createElementNS(SVGNS, 'circle');
+    d.setAttribute('cx', c.c[0]); d.setAttribute('cy', c.c[1]); d.dataset.iso = c.iso;
+    dots.appendChild(d); shapes[c.iso].push(d);
+  }
+
+  function paintMap() {
+    const inCluster = new Set(state.cluster ? clusters[state.cluster].countries : []);
+    for (const iso in shapes) {
+      const n = countryCards(iso).length;
+      for (const el of shapes[iso]) {
+        el.classList.toggle('c1', n === 1);
+        el.classList.toggle('c2', n >= 2);
+        el.classList.toggle('sel', state.country === iso);
+        el.classList.toggle('incluster', inCluster.has(iso));
+      }
+      if (shapes[iso][1]) shapes[iso][1].style.display = n || state.country === iso || inCluster.has(iso) ? '' : 'none';
+    }
+  }
+
+  let vb = { x: 0, y: 0, w: W.w, h: W.h };
+  const applyVb = () => {
+    svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    const r = Math.max(1.2, 5 * vb.w / W.w);
+    for (const d of dots.children) d.setAttribute('r', r);
+  };
+  const resetVb = () => { vb = { x: 0, y: 0, w: W.w, h: W.h }; applyVb(); };
+  resetVb();
+  $('recenter').onclick = resetVb;
+
+  const toSvg = e => {
+    const r = svg.getBoundingClientRect();
+    const s = Math.max(vb.w / r.width, vb.h / r.height);
+    const ox = (r.width * s - vb.w) / 2, oy = (r.height * s - vb.h) / 2;
+    return { x: vb.x - ox + (e.clientX - r.left) * s, y: vb.y - oy + (e.clientY - r.top) * s, s };
+  };
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = toSvg(e);
+    const nw = Math.min(W.w, Math.max(W.w / 40, vb.w * Math.exp(e.deltaY * 0.0015)));
+    const f = nw / vb.w;
+    vb = { x: p.x - (p.x - vb.x) * f, y: p.y - (p.y - vb.y) * f, w: nw, h: vb.h * f };
+    applyVb();
+  }, { passive: false });
+
+  let drag = null;
+  const isoAt = e => { const el = document.elementFromPoint(e.clientX, e.clientY); return el && el.dataset ? el.dataset.iso : null; };
+  svg.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, vb: { ...vb }, moved: false }; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove', e => {
+    if (drag) {
+      const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('dragging'); }
+      if (drag.moved) { const { s } = toSvg(e); vb = { ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }; applyVb(); return; }
+    }
+    const iso = isoAt(e);
+    svg.querySelectorAll('.hover').forEach(x => x.classList.remove('hover'));
+    if (iso) {
+      shapes[iso].forEach(x => x.classList.add('hover'));
+      const n = countryCards(iso).length;
+      const r = svg.parentElement.getBoundingClientRect();
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX - r.left) + 'px';
+      tip.style.top = (e.clientY - r.top) + 'px';
+      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' fiches' : ' fiche') : 'aucune fiche'}</span>`;
+    } else tip.style.display = 'none';
+  });
+  svg.addEventListener('pointerup', e => {
+    const moved = drag && drag.moved;
+    drag = null; svg.classList.remove('dragging');
+    if (moved) return;
+    const iso = isoAt(e);
+    if (iso) openCountry(iso);
+    else { state.country = null; update(); }
+  });
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+
+  // ---------- Fiches ----------
+  function cardEl(c, context, board) {
+    const b = document.createElement('button');
+    const inv = isInv(c);
+    b.className = 'card' + (inv ? ' inv-on' : '');
+    const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
+    const what = c.types.map(t => typeLabel[t]).join(', ') + (c.title ? ', ' + c.title : '');
+    let title = c.title || c.types.map(t => typeLabel[t]).join(', ');
+    let others = c.cluster ? clusters[c.cluster].label
+      : c.world ? 'World'
+      : c.countries.filter(x => x !== context).map(nameOf).join(', ');
+    if (board) { [title, others, context] = state.country ? [what, '', null] : [where, what, null]; }
+    b.innerHTML = `<img loading="lazy" decoding="async" class="${inv ? 'inv' : ''}" src="${enc(c.thumb)}" width="${c.w}" height="${c.h}" alt="">`
+      + `<span class="cap">${title}${others ? `<small>${context ? 'aussi ' : ''}${others}</small>` : ''}${c.lowres ? '<span class="low">basse déf.</span>' : ''}</span>`;
+    b.onclick = () => openLb(c);
+    visible.push(c);
+    return b;
+  }
+  function section(title, list, context, cls, grid) {
+    if (!list.length) return null;
+    const s = document.createElement('section');
+    if (cls) s.className = cls;
+    s.innerHTML = `<h2>${title}</h2>`;
+    const box = grid ? Object.assign(document.createElement('div'), { className: 'grid' }) : s;
+    list.forEach(c => box.appendChild(cardEl(c, context)));
+    if (grid) s.appendChild(box);
+    return s;
+  }
+  function header(title, sub, actions) {
+    const h = document.createElement('div');
+    h.className = 'head';
+    h.innerHTML = `<div><h1>${title}</h1>${sub ? `<span class="iso">${sub}</span>` : ''}</div>`;
+    const a = Object.assign(document.createElement('div'), { className: 'actions' });
+    for (const [label, fn, cls] of actions) {
+      const b = Object.assign(document.createElement('button'), { className: cls || 'ghost', textContent: label });
+      b.onclick = fn; a.appendChild(b);
+    }
+    h.appendChild(a);
+    return h;
+  }
+  const groupBy = (list, keyFn) => {
+    const m = new Map();
+    for (const c of list) for (const k of keyFn(c)) { if (!m.has(k)) m.set(k, []); m.get(k).push(c); }
+    return m;
+  };
+  const empty = text => Object.assign(document.createElement('p'), { className: 'empty-state', textContent: text });
+  const closeBtn = fn => ['×', fn, 'close'];
+
+  // Contenu d'une sélection, partagé entre panneau et planche
+  function membersEl() {
+    const m = Object.assign(document.createElement('div'), { className: 'members' });
+    for (const iso of clusters[state.cluster].countries) {
+      const b = Object.assign(document.createElement('button'), { textContent: nameOf(iso) });
+      if (!countAll(iso)) b.classList.add('none');
+      b.onclick = () => selectCountry(iso);
+      m.appendChild(b);
+    }
+    return m;
+  }
+
+  function selectionCards() {
+    let list;
+    if (state.country) list = countryCards(state.country);
+    else if (state.cluster) list = cards.filter(c => (c.cluster === state.cluster || c.countries.some(i => clusters[state.cluster].countries.includes(i))) && matchType(c));
+    else list = cards.filter(matchType);
+    const where = c => c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
+    return list.sort((a, b) => where(a).localeCompare(where(b), 'fr') || a.title.localeCompare(b.title, 'fr'));
+  }
+
+  function fillBoard(root) {
+    const list = selectionCards();
+    if (!list.length) return root.appendChild(empty('Aucune fiche pour cette sélection.'));
+    const grid = Object.assign(document.createElement('div'), { className: 'grid' });
+    list.forEach(c => grid.appendChild(cardEl(c, null, true)));
+    root.appendChild(grid);
+  }
+
+  function fillSelection(root, grid) {
+    const add = el => el && root.appendChild(el);
+    if (state.country) {
+      const iso = state.country;
+      const list = countryCards(iso);
+      if (!list.length) return add(empty(state.type
+        ? `Pas de fiche « ${typeLabel[state.type]} » pour ce pays.`
+        : `Aucune fiche pour ce pays. Range-la dans images\\${iso} ${nameOf(iso)}\\<type>\\ puis lance build.cmd.`));
+      for (const [t, l] of groupBy(list.filter(c => !c.cluster), c => [c.types[0]])) add(section(typeLabel[t], l, iso, null, grid));
+      for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
+      return;
+    }
+    if (state.cluster) {
+      const cl = clusters[state.cluster];
+      add(membersEl());
+      add(section('Fiches du cluster', cards.filter(c => c.cluster === state.cluster && matchType(c)), null, 'group-cluster', grid));
+      for (const iso of cl.countries) add(section(nameOf(iso), countryCards(iso).filter(c => !c.cluster), iso, null, grid));
+      return;
+    }
+    if (state.type) {
+      const list = cards.filter(matchType);
+      if (!list.length) return add(empty('Aucune fiche de ce type pour l’instant.'));
+      add(section('World', list.filter(c => c.world), null, null, grid));
+      for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
+      const byCountry = groupBy(list.filter(c => !c.cluster && !c.world), c => c.countries);
+      [...byCountry.keys()].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'fr'))
+        .forEach(iso => add(section(nameOf(iso), byCountry.get(iso), iso, null, grid)));
+    }
+  }
+
+  function selectionTitle() {
+    if (state.country) return [nameOf(state.country), state.country + (state.type ? `, ${typeLabel[state.type]}` : '')];
+    if (state.cluster) return [clusters[state.cluster].label, `${clusters[state.cluster].countries.length} pays` + (state.type ? `, ${typeLabel[state.type]}` : '')];
+    if (state.type) return [typeLabel[state.type], null];
+    return null;
+  }
+
+  function renderPanel() {
+    const panel = $('panel');
+    panel.innerHTML = '';
+    visible = [];
+    const t = selectionTitle();
+    if (t) {
+      panel.appendChild(header(t[0], t[1], [
+        ['Planche', () => { state.view = 'board'; update(); }],
+        closeBtn(() => { state.country = state.cluster = null; if (!state.country) state.type = null; update(); }),
+      ]));
+      fillSelection(panel, false);
+      return;
+    }
+    panel.appendChild(header('Atlas', null, []));
+    const nCountries = new Set(cards.flatMap(c => c.countries)).size;
+    const st = Object.assign(document.createElement('div'), { className: 'stats' });
+    st.innerHTML = `<div>${cards.length}<small>fiches</small></div><div>${nCountries}<small>pays couverts</small></div>`;
+    panel.appendChild(st);
+    const hint = Object.assign(document.createElement('p'), { className: 'hint' });
+    hint.innerHTML = 'Tape au clavier, n’importe quand : « phone br », « plaque pl », « car paraguay ». <kbd>Entrée</kbd> ouvre la fiche. Un clic sur un pays ouvre directement ses fiches.';
+    panel.appendChild(hint);
+    const tr = trainersEl();
+    tr && panel.appendChild(tr);
+    if (state.dailyCard && cards.length) {
+      const day = Math.floor(Date.now() / 86400000);
+      const s = section('Fiche du jour', [cards[day % cards.length]]);
+      s && panel.appendChild(s);
+    }
+    const w = section('World', cards.filter(c => c.world));
+    w && panel.appendChild(w);
+  }
+
+  // Trainers (apps.json, injecté par build.py) : liens vers les outils, ouverts dans un nouvel onglet
+  function trainersEl() {
+    if (!apps.length) return null;
+    const s = document.createElement('section');
+    s.innerHTML = '<h2>Trainers</h2>';
+    const box = Object.assign(document.createElement('div'), { className: 'apps' });
+    const order = { live: 0, wip: 1 };
+    [...apps].sort((a, b) => (order[a.status] - order[b.status]) || a.name.fr.localeCompare(b.name.fr, 'fr')).forEach(a => {
+      const l = Object.assign(document.createElement('a'), { className: 'app', href: a.url, target: '_blank', rel: 'noopener' });
+      const where = a.scope === 'world' ? `${a.countries.length || 'tous'} pays` : a.countries.map(nameOf).join(', ');
+      const what = a.types.map(t => typeLabel[t]).join(', ');
+      l.innerHTML = `<b></b><small></small>${a.status === 'wip' ? '<span class="wip">en cours</span>' : ''}`;
+      l.querySelector('b').textContent = a.name.fr;
+      l.querySelector('small').textContent = `${what} · ${where}`;
+      box.appendChild(l);
+    });
+    s.appendChild(box);
+    return s;
+  }
+
+  function renderBoard() {
+    const board = $('board');
+    board.innerHTML = '';
+    if (!$('app').classList.contains('board-mode')) return;
+    visible = [];   // la navigation suit l'ordre de la planche
+    const t = selectionTitle();
+    if (!t) return;
+    board.appendChild(header(t[0], t[1], [
+      [state.country ? 'Voir la carte' : 'Voir la couverture', () => { state.view = 'map'; update(); }],
+      closeBtn(reset),
+    ]));
+    if (state.cluster) board.appendChild(membersEl());
+    fillBoard(board);
+  }
+
+  // ---------- Visionneuse ----------
+  const lb = $('lightbox'), stage = $('stage'), img = $('lbimg');
+  let cur = null, view = { s: 1, x: 0, y: 0 }, lbDrag = null;
+  const preload = {};
+  const applyView = () => { img.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.s})`; };
+  function fit() {
+    const r = stage.getBoundingClientRect();
+    const bottom = visible.length > 1 ? 150 : 80;
+    const s = Math.min((r.width - 40) / cur.w, (r.height - bottom - 20) / cur.h, 3);
+    view = { s, x: (r.width - cur.w * s) / 2, y: (r.height - bottom - cur.h * s) / 2 + 10 };
+    applyView();
+  }
+  function paintInv() {
+    const inv = isInv(cur);
+    img.classList.toggle('inv', inv);
+    img.style.background = inv ? 'var(--inv-bg)' : '#fff';
+    $('lbinv').classList.toggle('on', inv);
+  }
+  function openLb(c, list) {
+    if (list) visible = list;
+    cur = c;
+    $('lbmsg').textContent = '';
+    img.onerror = () => { img.onerror = null; img.src = enc(c.thumb); $('lbmsg').textContent = 'Original introuvable : relance build.cmd'; };
+    img.src = enc(c.file);
+    img.width = c.w; img.height = c.h;
+    const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
+    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}${c.lowres ? ', basse définition' : ''}</small>`;
+    const i = visible.indexOf(c);
+    $('lbprev').disabled = i <= 0;
+    $('lbnext').disabled = i < 0 || i >= visible.length - 1;
+    for (const n of [visible[i - 1], visible[i + 1]]) {
+      if (n && !preload[n.id]) { preload[n.id] = new Image(); preload[n.id].src = enc(n.file); }
+    }
+    paintInv();
+    paintStrip();
+    lb.classList.add('open');
+    fit();
+  }
+  function paintStrip() {
+    const strip = $('strip');
+    strip.innerHTML = '';
+    if (visible.length < 2) return;
+    for (const v of visible) {
+      const b = document.createElement('button');
+      b.className = v === cur ? 'cur' : '';
+      b.title = v.title || v.types.map(t => typeLabel[t]).join(', ');
+      b.innerHTML = `<img src="${enc(v.thumb)}" class="${isInv(v) ? 'inv' : ''}" alt="">`;
+      b.onclick = () => openLb(v);
+      strip.appendChild(b);
+    }
+    strip.querySelector('.cur')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  const closeLb = () => lb.classList.remove('open');
+  const step = d => { const i = visible.indexOf(cur) + d; if (visible[i]) openLb(visible[i]); };
+  function toggleInv() {
+    if (!dark) { dark = true; store.set('dark', true); invOverride[cur.id] = true; }
+    else invOverride[cur.id] = !isInv(cur);
+    if (invOverride[cur.id] === cur.invert) delete invOverride[cur.id];
+    store.set('inv', invOverride);
+    paintInv();
+    update();
+  }
+  $('lbclose').onclick = closeLb;
+  $('lbfit').onclick = fit;
+  $('lbinv').onclick = toggleInv;
+  $('lbprev').onclick = () => step(-1);
+  $('lbnext').onclick = () => step(1);
+
+  stage.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = stage.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const ns = Math.min(16, Math.max(0.05, view.s * Math.exp(-e.deltaY * 0.0015)));
+    const f = ns / view.s;
+    view = { s: ns, x: mx - (mx - view.x) * f, y: my - (my - view.y) * f };
+    applyView();
+  }, { passive: false });
+  stage.addEventListener('pointerdown', e => { lbDrag = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, onImg: e.target === img }; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove', e => {
+    if (!lbDrag) return;
+    const dx = e.clientX - lbDrag.x, dy = e.clientY - lbDrag.y;
+    if (Math.hypot(dx, dy) > 4) { lbDrag.moved = true; stage.classList.add('dragging'); }
+    if (lbDrag.moved) { view.x = lbDrag.vx + dx; view.y = lbDrag.vy + dy; applyView(); }
+  });
+  stage.addEventListener('pointerup', () => {
+    if (lbDrag && !lbDrag.moved && !lbDrag.onImg) closeLb();
+    lbDrag = null; stage.classList.remove('dragging');
+  });
+  stage.addEventListener('dblclick', e => {
+    const r = stage.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top, f = 2.5;
+    view = { s: view.s * f, x: mx - (mx - view.x) * f, y: my - (my - view.y) * f };
+    applyView();
+  });
+  window.addEventListener('resize', () => { if (lb.classList.contains('open')) fit(); });
+
+  // ---------- Clavier ----------
+  // Taper une lettre n'importe où (même dans la visionneuse) ouvre la recherche
+  window.addEventListener('keydown', e => {
+    if (palette.classList.contains('open')) return;
+    const letter = e.key.length === 1 && /[\p{L}\p{N}]/u.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey;
+    if (lb.classList.contains('open')) {
+      if (e.key === 'Escape') closeLb();
+      else if (e.key === 'ArrowRight') step(1);
+      else if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === ' ') { e.preventDefault(); fit(); }
+      else if (letter) { e.preventDefault(); openPalette(e.key); }
+      return;
+    }
+    if (e.key === 'Escape') { reset(); return; }
+    if (e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) { e.preventDefault(); openPalette(); return; }
+    if (letter) { e.preventDefault(); openPalette(e.key); }
+  });
+
+  // ---------- Réglages Lively (si utilisé en wallpaper) ----------
+  window.livelyPropertyListener = (name, val) => {
+    const root = document.documentElement.style;
+    if (name === 'leftGutter') root.setProperty('--gutter-left', val + 'px');
+    if (name === 'bottomGutter') root.setProperty('--gutter-bottom', val + 'px');
+    if (name === 'dailyCard') { state.dailyCard = !!val; renderPanel(); }
+  };
+
+  function update() {
+    $('app').classList.toggle('board-mode', state.view === 'board' && !!selectionTitle());
+    renderChips(); paintMap(); renderPanel(); renderBoard();
+  }
+  update();
+})();
+</script>
+</body>
+</html>

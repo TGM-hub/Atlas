@@ -1,0 +1,174 @@
+{
+  "types": [
+    {
+      "key": "landscape",
+      "label": "Landscape",
+      "aliases": [
+        "paysage",
+        "vegetation",
+        "végétation",
+        "nature",
+        "terrain",
+        "relief"
+      ]
+    },
+    {
+      "key": "language",
+      "label": "Language",
+      "aliases": [
+        "langue",
+        "lang",
+        "alphabet",
+        "script",
+        "écriture",
+        "lettres",
+        "letters"
+      ]
+    },
+    {
+      "key": "architecture",
+      "label": "Architecture",
+      "aliases": [
+        "archi",
+        "maison",
+        "maisons",
+        "house",
+        "houses",
+        "building",
+        "toit",
+        "roof"
+      ]
+    },
+    {
+      "key": "plate",
+      "label": "Plates",
+      "aliases": [
+        "plates",
+        "plaque",
+        "plaques",
+        "immatriculation",
+        "license",
+        "licence"
+      ]
+    },
+    {
+      "key": "bollard",
+      "label": "Bollards",
+      "aliases": [
+        "bollards",
+        "borne",
+        "bornes"
+      ]
+    },
+    {
+      "key": "pole",
+      "label": "Poles",
+      "aliases": [
+        "poles",
+        "poteau",
+        "poteaux",
+        "utility"
+      ]
+    },
+    {
+      "key": "sign",
+      "label": "Signs",
+      "aliases": [
+        "signs",
+        "panneau",
+        "panneaux",
+        "signalisation"
+      ]
+    },
+    {
+      "key": "road-lines",
+      "label": "Road lines",
+      "aliases": [
+        "lines",
+        "marquage",
+        "ligne",
+        "lignes",
+        "marking",
+        "markings"
+      ]
+    },
+    {
+      "key": "phone",
+      "label": "Phone codes",
+      "aliases": [
+        "téléphone",
+        "telephone",
+        "tel",
+        "tél",
+        "indicatif",
+        "indicatifs",
+        "area code",
+        "ddd",
+        "code",
+        "codes"
+      ]
+    },
+    {
+      "key": "car",
+      "label": "Google car",
+      "aliases": [
+        "voiture",
+        "gen",
+        "camera",
+        "caméra",
+        "meta",
+        "coverage",
+        "couverture"
+      ]
+    },
+    {
+      "key": "soil",
+      "label": "Soil",
+      "aliases": [
+        "sol",
+        "terre",
+        "dirt"
+      ]
+    },
+    {
+      "key": "flag",
+      "label": "Flags",
+      "aliases": [
+        "flags",
+        "drapeau",
+        "drapeaux"
+      ]
+    },
+    {
+      "key": "other",
+      "label": "Other",
+      "aliases": [
+        "autre",
+        "autres",
+        "divers",
+        "misc"
+      ]
+    }
+  ],
+  "clusters": {
+    "cyrillic": {
+      "label": "Cyrillic",
+      "aliases": [
+        "cyrillique",
+        "cyr"
+      ],
+      "countries": [
+        "RU",
+        "UA",
+        "BY",
+        "BG",
+        "RS",
+        "MK",
+        "ME",
+        "MN",
+        "KZ",
+        "KG"
+      ]
+    }
+  }
+}
