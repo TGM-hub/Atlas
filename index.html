@@ -76,6 +76,7 @@
   #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
   #map .sel { fill: #fff4cc; stroke: #fff; stroke-width: 1.8; }
   #map circle { stroke-width: 1; }
+  #map .relief { pointer-events: none; opacity: .55; }
   #tip {
     position: absolute; pointer-events: none; padding: 5px 9px; border-radius: 3px;
     background: var(--ink); color: #13232e; font-size: 14px; white-space: nowrap;
@@ -443,6 +444,12 @@
     p.setAttribute('d', c.d); p.dataset.iso = c.iso;
     g.appendChild(p); shapes[c.iso] = [p];
   }
+  // Relief : ombrage Natural Earth reprojeté (relief.webp), fondu sur les pays, ne capte pas la souris
+  const relief = document.createElementNS(SVGNS, 'image');
+  relief.setAttribute('href', 'relief.webp');
+  relief.setAttribute('width', W.w); relief.setAttribute('height', W.h);
+  relief.setAttribute('class', 'relief');
+  g.appendChild(relief);
   const dots = document.createElementNS(SVGNS, 'g');
   g.appendChild(dots);
   for (const c of W.countries.filter(c => c.small)) {

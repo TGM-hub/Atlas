@@ -32,3 +32,6 @@ Tape au clavier n'importe quand. Pays en anglais, en français ou code ISO ; typ
 ## Partage (GitHub Pages)
 `images\` n'est pas publié : le build en garde une copie dans `thumbs\full\`.
 Supprime la ligne `images/` de `.gitignore` si tu veux aussi sauvegarder les originaux sur GitHub.
+
+## Relief
+`relief.webp` : ombrage du relief (Natural Earth, domaine public) reprojeté dans la projection de `map.js`, affiché par-dessus les pays. Opacité réglable dans `index.html` (`#map .relief`).
