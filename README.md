@@ -1,6 +1,6 @@
 # GeoGuessr Atlas
 
-📂 [Atlas](https://github.com/TGM-hub/<repo>/tree/main/Atlas)
+🌐 [Atlas](https://tgm-hub.github.io/Atlas/)
 
 ## Installation (une fois)
 1. `pip install pillow`
