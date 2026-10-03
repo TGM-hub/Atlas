@@ -46,6 +46,11 @@ if ($staged) {
     git commit -q -m $msg -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
     if ($LASTEXITCODE -ne 0) { throw "git commit a échoué" }
 }
+# Intègre d'abord ce qui a été poussé ailleurs (ex. README modifié sur GitHub)
+if ($hasUpstream) {
+    git pull --rebase origin main
+    if ($LASTEXITCODE -ne 0) { git rebase --abort; throw "Conflit avec la version en ligne : rien n'est parti, demande de l'aide avant de relancer." }
+}
 git push -u origin main
 if ($LASTEXITCODE -ne 0) { throw "git push a échoué (voir le message ci-dessus)" }
 Write-Host "`nPublié. En ligne d'ici une minute : https://tgm-hub.github.io/Atlas/" -ForegroundColor Green

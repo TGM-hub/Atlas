@@ -4,3 +4,4 @@ GeoGuessr Atlas.lnk
 LivelyProperties.json
 __pycache__/
 .env
+Claude outputs/

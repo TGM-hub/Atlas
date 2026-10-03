@@ -19,6 +19,7 @@ class Proj:
         s.lon0, s.lat1 = lon0, lat1; s.k = w / ((lon1 - lon0) * s.K)
         s.w, s.h = w, round((lat1 - lat0) * s.k); s.box = (lon0, lon1, lat0, lat1)
     def __call__(s, lon, lat): return ((lon - s.lon0) * s.K * s.k, (s.lat1 - lat) * s.k)
+    def inv(s, x, y): return (s.lon0 + x / (s.K * s.k), s.lat1 - y / s.k)
 
 def relief(P, gain=380):
     """Ombrage Natural Earth (domaine public) recadré sur la carte, en PNG data-URI."""
