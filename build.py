@@ -17,6 +17,7 @@ import re
 import sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageOps
 
 ROOT = Path(__file__).parent
@@ -25,7 +26,9 @@ CACHE_FILE = THUMBS / "_cache.json"
 EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp"}
 THUMB_MAX_W, THUMB_MAX_H = 900, 1600   # ~2x la taille affichée, net sur écran haute densité
 LOWRES_PX = 1200                       # en dessous (plus grand côté), la fiche est signalée
-LIGHT_SHARE = 0.45                     # part de pixels clairs au-delà de laquelle on inverse en mode sombre
+LIGHT_SHARE = 0.45                     # part de pixels clairs au-delà de laquelle l'image est « sur fond blanc »
+INK_COLOUR_MAX = 0.20                  # on n'inverse que si le dessin est quasi monochrome (sinon couleurs massacrées)
+ANALYSE_V = 2                          # incrémenter pour forcer la ré-analyse de toutes les fiches
 
 config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 type_keys = {t["key"] for t in config["types"]}
@@ -67,14 +70,31 @@ def analyse(src, dst):
         rgba = im.convert("RGBA")
         flat = Image.new("RGB", rgba.size, (255, 255, 255))
         flat.paste(rgba, mask=rgba.split()[3])
-        small = flat.convert("L").resize((160, max(1, round(160 * size[1] / size[0]))))
-        hist = small.histogram()
-        light = sum(hist[226:]) / sum(hist)
+        sm = flat.resize((300, max(1, round(300 * size[1] / size[0]))))
+        L = np.asarray(sm.convert("L"))
+        hsv = np.asarray(sm.convert("HSV"), dtype=np.float32) / 255
+        ink = L < 226
+        light = 1 - ink.mean()
+        colour = ((hsv[..., 1] > .3) & (hsv[..., 2] > .2) & ink).sum() / max(ink.sum(), 1)
         thumb = flat.copy()
         thumb.thumbnail((THUMB_MAX_W, THUMB_MAX_H), Image.LANCZOS)
         dst.parent.mkdir(parents=True, exist_ok=True)
         thumb.save(dst, "WEBP", quality=88, method=5)
-    return {"w": size[0], "h": size[1], "invert": light >= LIGHT_SHARE}
+    # Inversion en mode sombre : seulement les schémas clairs et monochromes (plaques, drapeaux, cartes colorées : jamais)
+    return {"w": size[0], "h": size[1], "v": ANALYSE_V, "light": bool(light >= LIGHT_SHARE),
+            "invert": bool(light >= LIGHT_SHARE and colour < INK_COLOUR_MAX)}
+
+
+def make_full(src, dst):
+    """Original en WebP haute qualité ; garde l'original tel quel s'il est déjà plus léger."""
+    with Image.open(src) as im:
+        im = ImageOps.exif_transpose(im)
+        if max(im.size) > 16000:
+            im.thumbnail((16000, 16000), Image.LANCZOS)
+        im = im.convert("RGBA" if im.mode in ("RGBA", "LA", "P") and "transparency" in im.info or im.mode in ("RGBA", "LA") else "RGB")
+        im.save(dst, "WEBP", quality=90, method=4)
+    if dst.stat().st_size > src.stat().st_size and src.suffix.lower() == ".webp":
+        shutil.copy2(src, dst)
 
 
 def resolve_scope(parts):
@@ -118,20 +138,22 @@ for f in sorted(IMAGES.rglob("*")):
         continue
 
     key = rel.as_posix()
-    thumb_name = hashlib.sha1(key.encode("utf-8")).hexdigest()[:16] + ".webp"
-    thumb = THUMBS / thumb_name
     mtime = f.stat().st_mtime
+    # le nom change quand l'image change : le navigateur ne ressert jamais une ancienne version en cache
+    stem = hashlib.sha1(f"{key}|{mtime}".encode("utf-8")).hexdigest()[:16]
+    thumb_name = stem + ".webp"
+    thumb = THUMBS / thumb_name
     info = cache.get(key)
-    if not info or info.get("mtime") != mtime or not thumb.exists():
+    if not info or info.get("mtime") != mtime or info.get("v") != ANALYSE_V or not thumb.exists():
         info = analyse(f, thumb) | {"mtime": mtime}
         cache[key] = info
     used_thumbs.add(thumb_name)
-    # copie de l'original sous un nom ASCII : la page n'a jamais à gérer accents ou espaces
-    full_name = thumb_name.replace(".webp", f.suffix.lower())
+    # version pleine résolution en WebP (souvent 5 à 10x plus léger qu'un PNG), nom ASCII
+    full_name = stem + ".webp"
     full = FULL / full_name
-    if not full.exists() or full.stat().st_mtime < mtime:
+    if not full.exists():
         FULL.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(f, full)
+        make_full(f, full)
     used_full.add(full_name)
 
     cards.append({
@@ -146,6 +168,7 @@ for f in sorted(IMAGES.rglob("*")):
         "w": info["w"],
         "h": info["h"],
         "invert": info["invert"],
+        "light": info.get("light", False),
         "lowres": max(info["w"], info["h"]) < LOWRES_PX,
     })
 

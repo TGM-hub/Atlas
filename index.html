@@ -68,14 +68,15 @@
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
   #map { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
   #map.dragging { cursor: grabbing; }
-  #map path, #map circle { vector-effect: non-scaling-stroke; stroke: var(--ocean); stroke-width: .6; fill: var(--land); transition: fill .15s; }
+  #map path, #map circle { stroke: var(--ocean); stroke-width: var(--sw, .6); fill: var(--land); }
+  #map { transform-origin: 0 0; will-change: transform; }
   #map .c1 { fill: var(--sign-soft); }
   #map .c2 { fill: var(--sign); }
   #map .hover { fill: var(--land-hover); }
   #map .c1.hover, #map .c2.hover { fill: #ffe08a; }
   #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
   #map .sel { fill: #fff4cc; stroke: #fff; stroke-width: 1.8; }
-  #map circle { stroke-width: 1; }
+  #map circle { stroke-width: calc(var(--sw, .6) * 1.6); }
   #map .relief { pointer-events: none; opacity: .55; }
   #tip {
     position: absolute; pointer-events: none; padding: 5px 9px; border-radius: 3px;
@@ -107,6 +108,7 @@
   .card.inv-on { background: var(--inv-bg); }
   .card img { display: block; width: 100%; height: auto; }
   img.inv { filter: invert(.9) hue-rotate(180deg); }
+  img.dim { filter: brightness(.86); }   /* fiche claire non inversée : on adoucit le blanc en mode sombre */
   .card .cap { display: flex; gap: 8px; align-items: baseline; background: #16303f; color: var(--ink); padding: 7px 10px; font-size: 14px; }
   .card .cap small { color: var(--muted); font-size: 12px; }
   .card .cap .low { margin-left: auto; color: #e3a35a; font-size: 12px; }
@@ -245,6 +247,7 @@
   let dark = store.get('dark', true);
   const invOverride = store.get('inv', {});
   const isInv = c => dark && (c.id in invOverride ? invOverride[c.id] : c.invert);
+  const imgCls = c => isInv(c) ? 'inv' : (dark && c.light ? 'dim' : '');
 
   const state = { country: null, type: null, cluster: null, view: 'map', dailyCard: true };
   let visible = [];
@@ -391,7 +394,7 @@
       if (r.kind === 'card') {
         const c = r.c;
         const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-        b.innerHTML = `<img src="${enc(c.thumb)}" class="${isInv(c) ? 'inv' : ''}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}</small></span>`;
+        b.innerHTML = `<img src="${enc(c.thumb)}" class="${imgCls(c)}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}</small></span>`;
       } else {
         const label = r.kind === 'country' ? nameOf(r.iso) : r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
         const n = r.kind === 'country' ? countAll(r.iso) : r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
@@ -473,19 +476,33 @@
   }
 
   let vb = { x: 0, y: 0, w: W.w, h: W.h };
+  let shown = { ...vb }, commitT = 0;
+  const wrapRect = () => svg.parentElement.getBoundingClientRect();
+  const fitOf = (v, r) => { const s = Math.max(v.w / r.width, v.h / r.height); return { s, ox: (r.width * s - v.w) / 2, oy: (r.height * s - v.h) / 2 }; };
   const applyVb = () => {
+    clearTimeout(commitT);
+    svg.style.transform = '';
     svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+    shown = { ...vb };
+    const { s } = fitOf(vb, wrapRect());
+    svg.style.setProperty('--sw', (0.6 * s).toFixed(3));   // trait constant à l'écran, sans vector-effect
     const r = Math.max(1.2, 5 * vb.w / W.w);
     for (const d of dots.children) d.setAttribute('r', r);
+  };
+  // Pendant un geste : transform CSS de shown vers vb (aucun re-rendu SVG), puis applyVb au repos
+  const previewVb = () => {
+    const r = wrapRect(), a = fitOf(shown, r), b = fitOf(vb, r), k = a.s / b.s;
+    const tx = (shown.x - a.ox - vb.x + b.ox) / b.s, ty = (shown.y - a.oy - vb.y + b.oy) / b.s;
+    svg.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`;
+    clearTimeout(commitT);
+    commitT = setTimeout(() => { if (!drag) applyVb(); }, 160);
   };
   const resetVb = () => { vb = { x: 0, y: 0, w: W.w, h: W.h }; applyVb(); };
   resetVb();
   $('recenter').onclick = resetVb;
 
   const toSvg = e => {
-    const r = svg.getBoundingClientRect();
-    const s = Math.max(vb.w / r.width, vb.h / r.height);
-    const ox = (r.width * s - vb.w) / 2, oy = (r.height * s - vb.h) / 2;
+    const r = wrapRect(), { s, ox, oy } = fitOf(vb, r);
     return { x: vb.x - ox + (e.clientX - r.left) * s, y: vb.y - oy + (e.clientY - r.top) * s, s };
   };
   svg.addEventListener('wheel', e => {
@@ -494,22 +511,27 @@
     const nw = Math.min(W.w, Math.max(W.w / 40, vb.w * Math.exp(e.deltaY * 0.0015)));
     const f = nw / vb.w;
     vb = { x: p.x - (p.x - vb.x) * f, y: p.y - (p.y - vb.y) * f, w: nw, h: vb.h * f };
-    applyVb();
+    previewVb();
   }, { passive: false });
 
-  let drag = null;
+  let drag = null, hoverIso = null;
   const isoAt = e => { const el = document.elementFromPoint(e.clientX, e.clientY); return el && el.dataset ? el.dataset.iso : null; };
+  const setHover = iso => {
+    if (iso === hoverIso) return;            // pas de restyle tant qu'on reste sur le même pays
+    if (hoverIso) shapes[hoverIso].forEach(x => x.classList.remove('hover'));
+    hoverIso = iso;
+    if (iso) shapes[iso].forEach(x => x.classList.add('hover'));
+  };
   svg.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, vb: { ...vb }, moved: false }; svg.setPointerCapture(e.pointerId); });
   svg.addEventListener('pointermove', e => {
     if (drag) {
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('dragging'); }
-      if (drag.moved) { const { s } = toSvg(e); vb = { ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }; applyVb(); return; }
+      if (drag.moved) { const { s } = toSvg(e); vb = { ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }; setHover(null); tip.style.display = 'none'; previewVb(); return; }
     }
-    const iso = isoAt(e);
-    svg.querySelectorAll('.hover').forEach(x => x.classList.remove('hover'));
+    const iso = (e.target && e.target.dataset && e.target.dataset.iso) || null;
+    setHover(iso);
     if (iso) {
-      shapes[iso].forEach(x => x.classList.add('hover'));
       const n = countryCards(iso).length;
       const r = svg.parentElement.getBoundingClientRect();
       tip.style.display = 'block';
@@ -521,12 +543,13 @@
   svg.addEventListener('pointerup', e => {
     const moved = drag && drag.moved;
     drag = null; svg.classList.remove('dragging');
-    if (moved) return;
+    if (moved) { applyVb(); return; }
     const iso = isoAt(e);
     if (iso) openCountry(iso);
     else { state.country = null; update(); }
   });
-  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+  svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; setHover(null); });
+  window.addEventListener('resize', applyVb);
 
   // ---------- Fiches ----------
   function cardEl(c, context, board) {
@@ -540,7 +563,7 @@
       : c.world ? 'World'
       : c.countries.filter(x => x !== context).map(nameOf).join(', ');
     if (board) { [title, others, context] = state.country ? [what, '', null] : [where, what, null]; }
-    b.innerHTML = `<img loading="lazy" decoding="async" class="${inv ? 'inv' : ''}" src="${enc(c.thumb)}" width="${c.w}" height="${c.h}" alt="">`
+    b.innerHTML = `<img loading="lazy" decoding="async" class="${imgCls(c)}" src="${enc(c.thumb)}" width="${c.w}" height="${c.h}" alt="">`
       + `<span class="cap">${title}${others ? `<small>${context ? 'aussi ' : ''}${others}</small>` : ''}${c.lowres ? '<span class="low">basse déf.</span>' : ''}</span>`;
     b.onclick = () => openLb(c);
     visible.push(c);
@@ -724,6 +747,7 @@
   function paintInv() {
     const inv = isInv(cur);
     img.classList.toggle('inv', inv);
+    img.classList.toggle('dim', !inv && dark && !!cur.light);
     img.style.background = inv ? 'var(--inv-bg)' : '#fff';
     $('lbinv').classList.toggle('on', inv);
   }
@@ -731,9 +755,15 @@
     if (list) visible = list;
     cur = c;
     $('lbmsg').textContent = '';
-    img.onerror = () => { img.onerror = null; img.src = enc(c.thumb); $('lbmsg').textContent = 'Original introuvable : relance build.cmd'; };
-    img.src = enc(c.file);
+    img.src = enc(c.thumb);                  // déjà en cache : jamais l'image de la fiche précédente
     img.width = c.w; img.height = c.h;
+    const full = preload[c.id] || (preload[c.id] = Object.assign(new Image(), { decoding: 'async', src: enc(c.file) }));
+    const swap = () => { if (cur === c) img.src = full.src; };
+    if (full.complete && full.naturalWidth) swap();
+    else {
+      full.addEventListener('load', swap, { once: true });
+      full.addEventListener('error', () => { if (cur === c) $('lbmsg').textContent = 'Original introuvable : relance build.cmd'; }, { once: true });
+    }
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
     $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}${c.lowres ? ', basse définition' : ''}</small>`;
     const i = visible.indexOf(c);
@@ -755,7 +785,7 @@
       const b = document.createElement('button');
       b.className = v === cur ? 'cur' : '';
       b.title = v.title || v.types.map(t => typeLabel[t]).join(', ');
-      b.innerHTML = `<img src="${enc(v.thumb)}" class="${isInv(v) ? 'inv' : ''}" alt="">`;
+      b.innerHTML = `<img src="${enc(v.thumb)}" class="${imgCls(v)}" alt="">`;
       b.onclick = () => openLb(v);
       strip.appendChild(b);
     }

@@ -55,6 +55,26 @@
       ]
     },
     {
+      "id": "indonesia-kabupaten",
+      "name": {
+        "en": "Indonesia kabupaten",
+        "fr": "Kabupaten d'Indonésie"
+      },
+      "repo": "TGM-hub/indonesia-kabupaten",
+      "url": "https://tgm-hub.github.io/indonesia-kabupaten/",
+      "status": "live",
+      "visibility": "public",
+      "scope": "country",
+      "countries": [
+        "ID"
+      ],
+      "types": [
+        "other",
+        "plate",
+        "phone"
+      ]
+    },
+    {
       "id": "bollards",
       "name": {
         "en": "Bollards",
