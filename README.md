@@ -1,5 +1,7 @@
 # GeoGuessr Atlas
 
+📂 [Atlas](https://github.com/TGM-hub/<repo>/tree/main/Atlas)
+
 ## Installation (une fois)
 1. `pip install pillow`
 2. Dans le dossier Atlas : `powershell -ExecutionPolicy Bypass -File .\setup-atlas.ps1`
