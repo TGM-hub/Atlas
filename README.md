@@ -16,6 +16,7 @@
    - `images\_world\bollard\Europe.png` : mondial
    - `images\JP Japan\other\Post signs.png` : ce qui ne rentre nulle part
    - deux types à la fois : dossier `bollard+pole\`
+   - sous-dossier de regroupement (un seul niveau) : `images\ID Indonesia\other\Kabupaten\Java.png`, affiché en section repliable « Kabupaten »
 2. `build.cmd` (ou `publish.cmd` si tu partages l'atlas).
 3. F5 dans l'atlas.
 

@@ -8,6 +8,7 @@ Arborescence :
   images/_clusters/cyrillic/language/alphabet.png cluster (pays définis dans config.json)
   images/_world/bollard/europe.png                mondial
   Un dossier type peut combiner plusieurs types : .../bollard+poteau/fichier.png
+  Un sous-dossier optionnel dans un type regroupe des fiches : images/ID Indonesia/other/Kabupaten/Java.png
   Le nom du fichier devient le titre de la fiche.
 """
 import hashlib
@@ -119,8 +120,20 @@ def resolve_scope(parts):
     return [m.group(1).upper()], None, False, parts[1:]
 
 
-for f in sorted(IMAGES.rglob("*")):
-    if not f.is_file() or f.suffix.lower() not in EXTS:
+# Fiches « (local) » : contenus tiers (Plonk It…) pour usage perso, jamais publiés.
+# build.py --public les ignore (utilisé par publish.ps1) ; build.cmd les inclut.
+PUBLIC = "--public" in sys.argv
+LOCAL_TAG = "(local)"
+
+# En local, une fiche « X (local) » remplace sa version publique « X » (même dossier) : pas de doublon
+_all = [f for f in IMAGES.rglob("*") if f.is_file() and f.suffix.lower() in EXTS]
+HAS_LOCAL = {(f.parent, re.sub(r"\s*\(local\)", "", f.stem, flags=re.I).strip().lower()) for f in _all if LOCAL_TAG in f.stem.lower()}
+
+for f in sorted(_all):
+    is_local = LOCAL_TAG in f.stem.lower()
+    if PUBLIC and is_local:
+        continue
+    if not PUBLIC and not is_local and (f.parent, f.stem.strip().lower()) in HAS_LOCAL:
         continue
     rel = f.relative_to(IMAGES)
     try:
@@ -128,9 +141,10 @@ for f in sorted(IMAGES.rglob("*")):
     except ValueError as e:
         problems.append(f"{rel} : {e}")
         continue
-    if len(rest) != 2:
-        problems.append(f"{rel} : type manquant, range l'image dans un sous-dossier type (ex. …/bollard/), ou relance setup-atlas.ps1 pour migrer d'anciens noms")
+    if len(rest) not in (2, 3):
+        problems.append(f"{rel} : type manquant (ex. …/bollard/fichier.png) ou trop de sous-dossiers (un seul niveau de groupe : …/other/Kabupaten/fichier.png) ; relance setup-atlas.ps1 pour migrer d'anciens noms")
         continue
+    group = rest[1].strip() if len(rest) == 3 else ""
     types = [t for t in rest[0].lower().split("+") if t]
     unknown = [t for t in types if t not in type_keys]
     if unknown:
@@ -164,7 +178,9 @@ for f in sorted(IMAGES.rglob("*")):
         "cluster": cluster,
         "world": world,
         "types": types,
-        "title": f.stem.replace("_", " ").strip(),
+        "group": group,
+        "title": re.sub(r"\s*\(local\)", "", f.stem, flags=re.I).replace("_", " ").strip(),
+        "local": is_local,
         "w": info["w"],
         "h": info["h"],
         "invert": info["invert"],

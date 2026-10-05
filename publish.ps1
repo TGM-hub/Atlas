@@ -9,9 +9,10 @@ $Remote = "https://github.com/TGM-hub/Atlas.git"
 Set-Location $PSScriptRoot
 $env:PYTHONIOENCODING = "utf-8"
 
-# 1. Build : on ne publie jamais un Atlas cassé
-python build.py
-if ($LASTEXITCODE -ne 0) { throw "Build en erreur : corrige les fichiers signalés avant de publier." }
+# 1. Build public : sans les fiches « (local) » (contenus tiers), on ne publie jamais un Atlas cassé
+function Restore-Local { Write-Host "`nReconstruction de l'Atlas local (avec les fiches locales)..."; python build.py | Out-Null }
+python build.py --public
+if ($LASTEXITCODE -ne 0) { Restore-Local; throw "Build en erreur : corrige les fichiers signalés avant de publier." }
 
 # 2. Dépôt local (premier lancement)
 if (-not (Test-Path ".git")) {
@@ -26,7 +27,7 @@ git add -A
 $staged = git diff --cached --name-status
 $hasUpstream = git rev-parse --abbrev-ref "main@{upstream}" 2>$null
 $ahead = if ($hasUpstream) { git rev-list --count "origin/main..main" } elseif (git rev-parse --verify -q HEAD) { "1" } else { "0" }
-if (-not $staged -and $ahead -eq "0") { Write-Host "`nRien de nouveau à publier."; exit 0 }
+if (-not $staged -and $ahead -eq "0") { Write-Host "`nRien de nouveau à publier."; Restore-Local; exit 0 }
 
 if ($staged) {
     Write-Host "`nFichiers qui vont partir :" -ForegroundColor Cyan
@@ -37,7 +38,7 @@ if ($staged) {
     Write-Host "`nCommits locaux pas encore poussés :" -ForegroundColor Cyan
     git log --oneline -n 10
 }
-if ((Read-Host "Publier ? (o/N)") -notmatch '^[oOyY]') { git reset -q; Write-Host "Annulé, rien n'est parti."; exit 1 }
+if ((Read-Host "Publier ? (o/N)") -notmatch '^[oOyY]') { git reset -q; Write-Host "Annulé, rien n'est parti."; Restore-Local; exit 1 }
 
 # 4. Commit et push
 if ($staged) {
@@ -52,5 +53,6 @@ if ($hasUpstream) {
     if ($LASTEXITCODE -ne 0) { git rebase --abort; throw "Conflit avec la version en ligne : rien n'est parti, demande de l'aide avant de relancer." }
 }
 git push -u origin main
-if ($LASTEXITCODE -ne 0) { throw "git push a échoué (voir le message ci-dessus)" }
+if ($LASTEXITCODE -ne 0) { Restore-Local; throw "git push a échoué (voir le message ci-dessus)" }
+Restore-Local
 Write-Host "`nPublié. En ligne d'ici une minute : https://tgm-hub.github.io/Atlas/" -ForegroundColor Green

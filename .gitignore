@@ -5,3 +5,5 @@ LivelyProperties.json
 __pycache__/
 .env
 Claude outputs/
+_to_delete/
+_private_cache/

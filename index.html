@@ -100,6 +100,10 @@
   .close:hover { color: var(--ink); }
   h2 { font-size: 17px; font-weight: 600; margin: 22px 0 10px; color: var(--sign); }
   .group-cluster h2 { color: var(--sea-glass); }
+  details.sub { margin: 0 0 14px; border: 1px solid #33505f; border-radius: 6px; padding: 0 10px; }
+  details.sub > summary { cursor: pointer; padding: 9px 2px; font-weight: 600; color: var(--ink); list-style-position: inside; }
+  details.sub > summary small { margin-left: 8px; color: var(--muted); font-weight: 400; }
+  details.sub[open] > summary { margin-bottom: 6px; }
   #board h2 { font-size: 20px; margin-top: 28px; }
   #board .grid { columns: 400px; column-gap: 16px; }
   #board .members { margin-bottom: 20px; }
@@ -336,6 +340,7 @@
     ...(c.cluster ? [clusterField[c.cluster]] : []),
     ...(c.world ? [worldField] : []),
     field([c.title]),
+    ...(c.group ? [field([c.group])] : []),
   ];
   function scoreAll(qs, fields) {
     let total = 0;
@@ -394,7 +399,7 @@
       if (r.kind === 'card') {
         const c = r.c;
         const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-        b.innerHTML = `<img src="${enc(c.thumb)}" class="${imgCls(c)}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}</small></span>`;
+        b.innerHTML = `<img src="${enc(c.thumb)}" class="${imgCls(c)}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}</small></span>`;
       } else {
         const label = r.kind === 'country' ? nameOf(r.iso) : r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
         const n = r.kind === 'country' ? countAll(r.iso) : r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
@@ -557,7 +562,7 @@
     const inv = isInv(c);
     b.className = 'card' + (inv ? ' inv-on' : '');
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-    const what = c.types.map(t => typeLabel[t]).join(', ') + (c.title ? ', ' + c.title : '');
+    const what = c.types.map(t => typeLabel[t]).join(', ') + (c.group ? ', ' + c.group : '') + (c.title ? ', ' + c.title : '');
     let title = c.title || c.types.map(t => typeLabel[t]).join(', ');
     let others = c.cluster ? clusters[c.cluster].label
       : c.world ? 'World'
@@ -569,14 +574,27 @@
     visible.push(c);
     return b;
   }
+  // Sous-dossier de type (images/<pays>/<type>/<groupe>/fichier) : sous-section repliable sous les fiches simples
+  const openGroups = new Set();
   function section(title, list, context, cls, grid) {
     if (!list.length) return null;
     const s = document.createElement('section');
     if (cls) s.className = cls;
     s.innerHTML = `<h2>${title}</h2>`;
-    const box = grid ? Object.assign(document.createElement('div'), { className: 'grid' }) : s;
-    list.forEach(c => box.appendChild(cardEl(c, context)));
-    if (grid) s.appendChild(box);
+    const fill = (parent, items) => {
+      const box = grid ? Object.assign(document.createElement('div'), { className: 'grid' }) : parent;
+      items.forEach(c => box.appendChild(cardEl(c, context)));
+      if (grid) parent.appendChild(box);
+    };
+    fill(s, list.filter(c => !c.group));
+    for (const [g, items] of groupBy(list.filter(c => c.group), c => [c.group])) {
+      const key = title + '|' + g;
+      const d = Object.assign(document.createElement('details'), { className: 'sub', open: openGroups.has(key) });
+      d.innerHTML = `<summary>${g}<small>${items.length}</small></summary>`;
+      d.ontoggle = () => d.open ? openGroups.add(key) : openGroups.delete(key);
+      fill(d, items);
+      s.appendChild(d);
+    }
     return s;
   }
   function header(title, sub, actions) {
@@ -621,6 +639,8 @@
   }
 
   function fillBoard(root) {
+    // Un pays : rangé par type, les sous-dossiers en sections repliables
+    if (state.country && countryCards(state.country).some(c => c.group)) return fillSelection(root, true);
     const list = selectionCards();
     if (!list.length) return root.appendChild(empty('Aucune fiche pour cette sélection.'));
     const grid = Object.assign(document.createElement('div'), { className: 'grid' });
@@ -765,7 +785,7 @@
       full.addEventListener('error', () => { if (cur === c) $('lbmsg').textContent = 'Original introuvable : relance build.cmd'; }, { once: true });
     }
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.title ? ', ' + c.title : ''}${c.lowres ? ', basse définition' : ''}</small>`;
+    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${c.lowres ? ', basse définition' : ''}</small>`;
     const i = visible.indexOf(c);
     $('lbprev').disabled = i <= 0;
     $('lbnext').disabled = i < 0 || i >= visible.length - 1;
