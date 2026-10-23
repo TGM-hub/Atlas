@@ -479,7 +479,8 @@
   function paintMap() {
     const inCluster = new Set(state.cluster ? clusters[state.cluster].countries : []);
     for (const iso in shapes) {
-      const n = countryCards(iso).length;
+      // un type choisi : un pays couvert par un trainer de ce type (ex. phone-codes) compte comme couvert
+      const n = countryCards(iso).length || (state.type && countryApps(iso, state.type).length ? 1 : 0);
       for (const el of shapes[iso]) {
         el.classList.toggle('c1', n === 1);
         el.classList.toggle('c2', n >= 2);
@@ -548,11 +549,12 @@
     setHover(iso);
     if (iso) {
       const n = countryCards(iso).length;
+      const tr = state.type ? countryApps(iso, state.type) : [];
       const r = svg.parentElement.getBoundingClientRect();
       tip.style.display = 'block';
       tip.style.left = (e.clientX - r.left) + 'px';
       tip.style.top = (e.clientY - r.top) + 'px';
-      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' fiches' : ' fiche') : 'aucune fiche'}</span>`;
+      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' fiches' : ' fiche') : 'aucune fiche'}${tr.length ? ' · trainer ↗' : ''}</span>`;
     } else tip.style.display = 'none';
   });
   svg.addEventListener('pointerup', e => {

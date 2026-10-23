@@ -16,6 +16,7 @@ import shutil
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -33,10 +34,66 @@ ANALYSE_V = 2                          # incrémenter pour forcer la ré-analyse
 
 config = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
 type_keys = {t["key"] for t in config["types"]}
+type_label = {t["key"]: t["label"] for t in config["types"]}
 clusters = config.get("clusters", {})
 cache = json.loads(CACHE_FILE.read_text(encoding="utf-8")) if CACHE_FILE.exists() else {}
 
 cards, problems, warnings, used_thumbs, used_full = [], [], [], set(), set()
+
+# Titres : le nom de fichier nettoyé (bruit, pays redondant, mots collés), sauf correction dans titles.json
+# titles.json : {"chemin/relatif/sous/images.png": "Titre voulu"} ou {"nom du fichier sans extension": "Titre"}
+TITLE_FIXES = json.loads((ROOT / "titles.json").read_text(encoding="utf-8")) if (ROOT / "titles.json").exists() else {}
+_world_js = (ROOT / "map.js").read_text(encoding="utf-8") if (ROOT / "map.js").exists() else ""
+_names = {}
+for _k in ("names", "namesEn"):
+    _m = re.search(rf'"{_k}":(\{{[^}}]*\}})', _world_js)
+    for _iso, _n in (json.loads(_m.group(1)).items() if _m else []):
+        _names.setdefault(_iso, set()).add(_n)
+for _d in (IMAGES.iterdir() if IMAGES.exists() else []):
+    if re.match(r"[A-Z]{2}\s", _d.name):
+        _names.setdefault(_d.name[:2], set()).add(_d.name[3:])
+TITLE_JUNK = {"final", "version", "hopefully", "updated", "update", "darkmode", "lightmode", "nobg", "copy", "copie",
+              "png", "jpg", "jpeg", "webp", "screenshot", "img", "new"}
+TITLE_GLUED = {"licenceplates": "licence plates", "licenseplates": "license plates", "stateflags": "state flags",
+               "woodenhouse": "wooden house", "areacodes": "area codes", "roadlines": "road lines"}
+TITLE_STOP = {"of", "the", "and", "de", "la", "le", "les", "du", "des", "et", "in", "en"}
+
+
+def _fold(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s) if not unicodedata.combining(c)).lower()
+
+
+def clean_title(stem, countries, type_label, rel):
+    for k in (rel, stem):
+        if k in TITLE_FIXES:
+            return TITLE_FIXES[k]
+    s = re.sub(r"\s*\(local\)", "", stem, flags=re.I)
+    s = re.sub(r"(?i)(png|jpe?g|webp)$", "", s.strip())             # « regionalpng »
+    words = []
+    for w in re.split(r"[\s_\-]+", s):
+        if not w:
+            continue
+        w = TITLE_GLUED.get(w.lower(), w)
+        w = re.sub(r"(?<=[a-zA-Z]{3})\d$", "", w)                    # « numbering2 »
+        if w.lower() in TITLE_JUNK or re.fullmatch(r"(?i)v\d+", w):
+            continue
+        if re.fullmatch(r"\d+", w) and not re.fullmatch(r"(19|20)\d\d", w):   # numéros, mais garde les années
+            continue
+        words.extend(w.split(" "))
+    # un seul pays : son nom (ou son code) en début ou en fin de titre est redondant
+    if len(countries) == 1:
+        iso = countries[0]
+        forms = {_fold(iso)} | {_fold(n) for n in _names.get(iso, ())}
+        for _ in range(2):
+            for end in (0, -1):
+                for n in (3, 2, 1):
+                    if len(words) > n and _fold(" ".join(words[:n] if end == 0 else words[-n:])) in forms:
+                        words = words[n:] if end == 0 else words[:-n]
+                        break
+            while words and _fold(words[0]) in TITLE_STOP: words.pop(0)
+            while words and _fold(words[-1]) in TITLE_STOP: words.pop()
+    t = " ".join(words).strip() or type_label
+    return t[0].upper() + t[1:]
 
 # Trainers : apps.json validé puis injecté dans data.js (la page tourne en file://, pas de fetch possible)
 APP_STATUSES = {"live", "wip", "local", "idea", "archived"}   # archived : remplacé par un autre trainer, non affiché
@@ -181,7 +238,7 @@ for f in sorted(_all):
         "world": world,
         "types": types,
         "group": group,
-        "title": re.sub(r"\s*\(local\)", "", f.stem, flags=re.I).replace("_", " ").strip(),
+        "title": clean_title(f.stem, countries, type_label[types[0]], rel.as_posix()),
         "local": is_local,
         "w": info["w"],
         "h": info["h"],
