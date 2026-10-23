@@ -10,8 +10,14 @@ Set-Location $PSScriptRoot
 $env:PYTHONIOENCODING = "utf-8"
 
 # 1. Build public : sans les fiches « (local) » (contenus tiers), on ne publie jamais un Atlas cassé
-function Restore-Local { Write-Host "`nReconstruction de l'Atlas local (avec les fiches locales)..."; python build.py | Out-Null }
-python build.py --public
+# « python » peut être le raccourci du Microsoft Store : on garde le premier qui tourne vraiment
+$Py = $null
+foreach ($c in "py", "python", "python3") {
+    if (Get-Command $c -ErrorAction SilentlyContinue) { & $c -c "import PIL" *> $null; if ($LASTEXITCODE -eq 0) { $Py = $c; break } }
+}
+if (-not $Py) { throw "Python (avec Pillow) introuvable : ni py, ni python, ni python3." }
+function Restore-Local { Write-Host "`nReconstruction de l'Atlas local (avec les fiches locales)..."; & $Py build.py | Out-Null }
+& $Py build.py --public
 if ($LASTEXITCODE -ne 0) { Restore-Local; throw "Build en erreur : corrige les fichiers signalés avant de publier." }
 
 # 2. Dépôt local (premier lancement)

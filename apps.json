@@ -1,5 +1,5 @@
 {
-  "_doc": "Inventaire des trainers GeoGuessr. status: live | wip | local | idea. scope: country | world. types = clés de config.json.",
+  "_doc": "Inventaire des trainers GeoGuessr. status: live | wip | local | idea | archived. scope: country | world. types = clés de config.json. deeplink (facultatif) : URL avec {iso} (code ISO en minuscules), ouverte depuis la fiche d'un pays couvert.",
   "apps": [
     {
       "id": "sign-reader",
@@ -19,6 +19,50 @@
       ]
     },
     {
+      "id": "phone-codes",
+      "name": {
+        "en": "Phone codes",
+        "fr": "Indicatifs téléphoniques"
+      },
+      "repo": "TGM-hub/phone-codes",
+      "url": "https://tgm-hub.github.io/phone-codes/",
+      "deeplink": "https://tgm-hub.github.io/phone-codes/#{iso}",
+      "status": "live",
+      "visibility": "public",
+      "scope": "world",
+      "countries": [
+        "BR",
+        "JP",
+        "ID",
+        "PH",
+        "TH",
+        "TR",
+        "RU",
+        "PL",
+        "ES",
+        "PE",
+        "CO",
+        "ZA",
+        "MY",
+        "AU",
+        "NZ",
+        "RO",
+        "UA",
+        "HR",
+        "FR",
+        "DE",
+        "HU",
+        "GR",
+        "KR",
+        "US",
+        "CA",
+        "PR"
+      ],
+      "types": [
+        "phone"
+      ]
+    },
+    {
       "id": "ddd-brasil",
       "name": {
         "en": "DDD Brasil",
@@ -26,7 +70,7 @@
       },
       "repo": "TGM-hub/brasil-phone-code",
       "url": "https://tgm-hub.github.io/brasil-phone-code/",
-      "status": "live",
+      "status": "archived",
       "visibility": "public",
       "scope": "country",
       "countries": [
@@ -402,7 +446,7 @@
       },
       "repo": "TGM-hub/japan-phone-code",
       "url": "https://tgm-hub.github.io/japan-phone-code/",
-      "status": "wip",
+      "status": "archived",
       "visibility": "public",
       "scope": "country",
       "countries": [

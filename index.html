@@ -131,6 +131,7 @@
   .app:hover { border-color: var(--sign); background: #16303f; }
   .app b { font-weight: 600; font-size: 15px; }
   .app small { color: var(--muted); font-size: 12px; }
+  .country-apps { margin: 2px 0 10px; }
   .app .wip { margin-left: auto; flex: none; padding: 1px 6px; border: 1px solid var(--sign-soft); border-radius: 3px; color: var(--sign-soft); font-size: 11px; }
   .empty-state { color: var(--muted); font-size: 15px; line-height: 1.5; }
   kbd { font-family: inherit; font-size: 12px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; }
@@ -257,6 +258,10 @@
   let visible = [];
 
   const matchType = c => !state.type || c.types.includes(state.type);
+  // Trainers qui couvrent un pays : deeplink ({iso}) pour un trainer monde, sinon trainer de ce pays
+  const appLink = (a, iso) => a.deeplink ? a.deeplink.replace('{iso}', iso.toLowerCase()) : a.url;
+  const countryApps = (iso, type) => apps.filter(a => a.countries.includes(iso) && (a.deeplink || a.scope === 'country')
+    && (!type || a.types.includes(type)));
   const countryCards = iso => cards.filter(c => c.countries.includes(iso) && matchType(c));
   const countAll = iso => cards.filter(c => c.countries.includes(iso)).length;
 
@@ -267,11 +272,16 @@
     const base = state.country ? cards.filter(c => c.countries.includes(state.country)) : cards;
     for (const t of types) {
       const n = base.filter(c => c.types.includes(t.key)).length;
-      if (!n && state.type !== t.key) continue;   // seuls les types qui ont des fiches
+      const tr = state.country ? countryApps(state.country, t.key) : [];
+      if (!n && !tr.length && state.type !== t.key) continue;   // types qui ont des fiches, ou un trainer pour ce pays
       const b = document.createElement('button');
-      b.className = 'chip' + (state.type === t.key ? ' on' : '') + (n ? '' : ' empty');
-      b.innerHTML = `<b>${t.label}</b><span class="n">${n}</span>`;
+      b.className = 'chip' + (state.type === t.key ? ' on' : '') + (n || tr.length ? '' : ' empty');
+      b.innerHTML = `<b>${t.label}</b><span class="n">${n}${tr.length ? ' ↗' : ''}</span>`;
+      if (tr.length) b.title = `Trainer : ${tr.map(a => a.name.fr).join(', ')}`;
       b.onclick = () => {
+        // un trainer couvre ce pays pour ce type : on l'ouvre (nouvel onglet), et l'Atlas filtre ses fiches s'il en a
+        if (tr.length && state.type !== t.key) window.open(appLink(tr[0], state.country), '_blank', 'noopener');
+        if (!n && tr.length) return;
         if (state.type === t.key) { state.type = null; state.view = 'map'; }
         else { state.type = t.key; state.view = state.country ? state.view : 'board'; }
         update();
@@ -652,6 +662,7 @@
     const add = el => el && root.appendChild(el);
     if (state.country) {
       const iso = state.country;
+      add(countryTrainersEl(iso, state.type));
       const list = countryCards(iso);
       if (!list.length) return add(empty(state.type
         ? `Pas de fiche « ${typeLabel[state.type]} » pour ce pays.`
@@ -715,6 +726,21 @@
     }
     const w = section('World', cards.filter(c => c.world));
     w && panel.appendChild(w);
+  }
+
+  // Trainers d'un pays (filtrés par type si un type est choisi), en tête de la fiche pays
+  function countryTrainersEl(iso, type) {
+    const list = countryApps(iso, type);
+    if (!list.length) return null;
+    const box = Object.assign(document.createElement('div'), { className: 'apps country-apps' });
+    list.forEach(a => {
+      const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
+      l.innerHTML = '<b></b><small></small>';
+      l.querySelector('b').textContent = `${a.name.fr} ↗`;
+      l.querySelector('small').textContent = `${a.types.map(t => typeLabel[t]).join(', ')} · ${nameOf(iso)}`;
+      box.appendChild(l);
+    });
+    return box;
   }
 
   // Trainers (apps.json, injecté par build.py) : liens vers les outils, ouverts dans un nouvel onglet

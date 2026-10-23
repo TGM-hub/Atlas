@@ -39,7 +39,7 @@ cache = json.loads(CACHE_FILE.read_text(encoding="utf-8")) if CACHE_FILE.exists(
 cards, problems, warnings, used_thumbs, used_full = [], [], [], set(), set()
 
 # Trainers : apps.json validé puis injecté dans data.js (la page tourne en file://, pas de fetch possible)
-APP_STATUSES = {"live", "wip", "local", "idea"}
+APP_STATUSES = {"live", "wip", "local", "idea", "archived"}   # archived : remplacé par un autre trainer, non affiché
 APP_SHOWN = {"live", "wip"}                     # local/idea : pas d'URL en ligne, non affichés
 known_iso = {d.name[:2] for d in IMAGES.iterdir() if d.is_dir() and not d.name.startswith("_")} if IMAGES.exists() else set()
 apps = json.loads((ROOT / "apps.json").read_text(encoding="utf-8"))["apps"] if (ROOT / "apps.json").exists() else []
@@ -54,6 +54,8 @@ for a in apps:
     seen_ids.add(a.get("id"))
     if a.get("status") not in APP_STATUSES:
         problems.append(f"{where} : statut « {a.get('status')} » inconnu, valides : {', '.join(sorted(APP_STATUSES))}")
+    if "deeplink" in a and "{iso}" not in a["deeplink"]:
+        problems.append(f"{where} : deeplink sans {{iso}}")
     bad_t = [t for t in a.get("types", []) if t not in type_keys]
     if bad_t:
         problems.append(f"{where} : type inconnu {bad_t}")
