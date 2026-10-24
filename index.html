@@ -128,6 +128,7 @@
   /* --- Trainers (accueil) --- */
   .apps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
   .app { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
+  .app-ext { border-style: dashed; }
   .app:hover { border-color: var(--sign); background: #16303f; }
   .app b { font-weight: 600; font-size: 15px; }
   .app small { color: var(--muted); font-size: 12px; }
@@ -259,6 +260,13 @@
 
   const matchType = c => !state.type || c.types.includes(state.type);
   // Trainers qui couvrent un pays : deeplink ({iso}) pour un trainer monde, sinon trainer de ce pays
+  // Plonk It : lien vers la page publique du pays (lien seulement, aucun contenu repris).
+  // Slug = nom anglais en minuscules avec tirets ; PLONKIT_SLUG corrige les exceptions.
+  const PLONKIT = 'AD AE AL AR AT AU BD BE BG BM BO BR BT BW BY CA CH CL CN CO CR CW CZ DE DK DO EC EE EG ES FI FK FO FR GB GH GI GL GR GS GT HK HR HU ID IE IL IM IN IO IQ IS IT JE JO JP KE KG KH KR KZ LA LB LI LK LS LT LU LV MC ME MG MK ML MN MO MQ MT MX MY NA NG NL NO NP OM PA PE PH PK PL PM PR PT QA RE RO RS RU RW SE SG SI SJ SK SM SN ST SZ TH TN TR TW TZ UA UG UM US UY VI ZA'.split(' ');
+  const PLONKIT_SLUG = { GB: 'united-kingdom', IL: 'israel', CN: 'china', ST: 'sao-tome-and-principe', GS: 'south-georgia',
+    UM: 'us-minor-outlying-islands', VI: 'us-virgin-islands', PM: 'saint-pierre-and-miquelon', SJ: 'svalbard', MO: 'macau' };
+  const plonkitLink = iso => PLONKIT.includes(iso) ? 'https://www.plonkit.net/' + (PLONKIT_SLUG[iso] ||
+    nameOf(iso).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) : null;
   const appLink = (a, iso) => a.deeplink ? a.deeplink.replace('{iso}', iso.toLowerCase()) : a.url;
   const countryApps = (iso, type) => apps.filter(a => a.countries.includes(iso) && (a.deeplink || a.scope === 'country')
     && (!type || a.types.includes(type)));
@@ -733,7 +741,8 @@
   // Trainers d'un pays (filtrés par type si un type est choisi), en tête de la fiche pays
   function countryTrainersEl(iso, type) {
     const list = countryApps(iso, type);
-    if (!list.length) return null;
+    const plonk = !type && plonkitLink(iso);
+    if (!list.length && !plonk) return null;
     const box = Object.assign(document.createElement('div'), { className: 'apps country-apps' });
     list.forEach(a => {
       const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
@@ -742,6 +751,11 @@
       l.querySelector('small').textContent = `${a.types.map(t => typeLabel[t]).join(', ')} · ${nameOf(iso)}`;
       box.appendChild(l);
     });
+    if (plonk) {
+      const l = Object.assign(document.createElement('a'), { className: 'app app-ext', href: plonk, target: '_blank', rel: 'noopener' });
+      l.innerHTML = '<b>Plonk It ↗</b><small>guide du pays, site externe</small>';
+      box.appendChild(l);
+    }
     return box;
   }
 

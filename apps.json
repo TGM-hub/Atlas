@@ -240,7 +240,8 @@
       ],
       "types": [
         "bollard"
-      ]
+      ],
+      "deeplink": "https://tgm-hub.github.io/bollards-trainer/#{iso}"
     },
     {
       "id": "plates",
@@ -308,7 +309,8 @@
       ],
       "types": [
         "plate"
-      ]
+      ],
+      "deeplink": "https://tgm-hub.github.io/plate-trainer/#{iso}"
     },
     {
       "id": "city-placer",
@@ -436,7 +438,8 @@
       ],
       "types": [
         "other"
-      ]
+      ],
+      "deeplink": "https://tgm-hub.github.io/city-placer/#{iso}"
     },
     {
       "id": "japan-phone",
