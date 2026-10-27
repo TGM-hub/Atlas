@@ -313,6 +313,27 @@
       "deeplink": "https://tgm-hub.github.io/plate-trainer/#{iso}"
     },
     {
+      "id": "plates-regions",
+      "name": {
+        "en": "Plate Trainer – regions",
+        "fr": "Plaques par région"
+      },
+      "repo": "TGM-hub/plate-trainer",
+      "url": "https://tgm-hub.github.io/plate-trainer/",
+      "deeplink": "https://tgm-hub.github.io/plate-trainer/#r-{iso}",
+      "status": "live",
+      "visibility": "public",
+      "scope": "world",
+      "countries": [
+        "CA",
+        "MX",
+        "US"
+      ],
+      "types": [
+        "plate"
+      ]
+    },
+    {
       "id": "city-placer",
       "name": {
         "en": "City Placer",
