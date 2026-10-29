@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Révision du jour · GeoGuessr</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>">
+<style>
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --glass: #7cc7b4; --bad: #ef7d6b;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
+  body { padding: 20px 16px 60px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+  a { color: var(--glass); }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  button { background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--glass); }
+  button.main { background: var(--sign); color: #1a1a1a; border-color: var(--sign); font-weight: 600; }
+  button.ghost { background: none; }
+  button:disabled { opacity: .45; cursor: default; }
+  input, textarea, select { background: var(--ocean); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
+  header .date { color: var(--muted); }
+  header .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .streak { color: var(--sign); font-weight: 600; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 17px; display: flex; gap: 10px; align-items: baseline; }
+  .card h2 .muted { font-weight: 400; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .sessions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .sessions { grid-template-columns: 1fr; } }
+  .block { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); }
+  .block:first-of-type { border-top: 0; }
+  .block .st { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 12px; }
+  .block.done .st { background: var(--glass); border-color: var(--glass); color: #0e2130; }
+  .block.skip .st { border-style: dashed; }
+  .block.run .st { border-color: var(--sign); background: var(--sign); color: #1a1a1a; }
+  .block .nm { font-weight: 600; }
+  .block .why { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+  #timer { display: none; position: sticky; top: 8px; z-index: 5; border-color: var(--sign); }
+  #timer .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #timer .big { font-size: 40px; font-variant-numeric: tabular-nums; color: var(--sign); min-width: 120px; }
+  #timer .what { font-size: 18px; font-weight: 600; }
+  #timer .btns { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .bar { height: 5px; background: var(--ocean); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; background: var(--sign); width: 0; transition: width 1s linear; }
+  #plonk .country { font-size: 22px; font-weight: 600; }
+  #plonk textarea { width: 100%; min-height: 70px; margin-top: 8px; resize: vertical; }
+  #plonk ul { margin: 6px 0 0; padding-left: 18px; }
+  #plonk li { margin: 3px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; overflow-x: auto; padding-bottom: 4px; }
+  .heat i { width: 12px; height: 12px; border-radius: 2px; background: var(--ocean); border: 1px solid #1d3a4e; }
+  .heat i.l1 { background: #3d6b5f; } .heat i.l2 { background: #5a9c8a; } .heat i.l3 { background: var(--glass); } .heat i.today { outline: 1px solid var(--sign); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  th { color: var(--muted); font-weight: 400; font-size: 12px; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  svg.spark { width: 90px; height: 22px; vertical-align: middle; }
+  .kpis { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 10px; }
+  .kpis b { display: block; font-size: 22px; color: var(--ink); }
+  .kpis span { color: var(--muted); font-size: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .field { display: grid; gap: 4px; margin: 8px 0; }
+  .field input { width: 100%; }
+  .ok { color: var(--glass); } .err { color: var(--bad); }
+  details summary { cursor: pointer; color: var(--muted); }
+  footer { color: var(--muted); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Révision du jour</h1>
+    <span class="date" id="date"></span>
+    <span class="right"><span class="streak" id="streak"></span><a href="./">Atlas ↗</a></span>
+  </header>
+
+  <section class="card" id="timer">
+    <div class="row">
+      <div class="big" id="tLeft">10:00</div>
+      <div><div class="what" id="tWhat"></div><div class="muted" id="tHint"></div></div>
+      <div class="btns">
+        <button id="tOpen">Rouvrir</button>
+        <button id="tPause">Pause</button>
+        <button id="tMore">+5 min</button>
+        <button id="tDone" class="main">Terminer</button>
+        <button id="tSkip" class="ghost">Passer</button>
+      </div>
+    </div>
+    <div class="bar"><i id="tBar"></i></div>
+  </section>
+
+  <div class="sessions">
+    <section class="card"><h2>Session 1 <span class="muted" id="s1sum"></span></h2><div id="s1"></div></section>
+    <section class="card"><h2>Session 2 <span class="muted" id="s2sum"></span></h2><div id="s2"></div></section>
+  </div>
+
+  <section class="card" id="plonk"></section>
+
+  <div class="grid2">
+    <section class="card"><h2>Régularité</h2>
+      <div class="kpis" id="kpis"></div>
+      <div class="heat" id="heat"></div>
+      <div class="muted" style="margin-top:6px">17 dernières semaines · une case par jour, plus foncée = plus de minutes</div>
+    </section>
+    <section class="card"><h2>Trainers</h2><table id="perApp"></table>
+      <div class="muted" style="margin-top:6px">Précision lue dans chaque trainer (même navigateur). Courbe : un point par jour de révision.</div>
+    </section>
+  </div>
+
+  <section class="card"><h2>Sauvegarde <span class="muted" id="syncState"></span></h2>
+    <div class="row">
+      <button id="ghSave" class="main">Sauvegarder sur GitHub</button>
+      <button id="ghLoad">Récupérer depuis GitHub</button>
+      <button id="fileSave">Exporter un fichier</button>
+      <label class="row" style="cursor:pointer"><button id="fileLoadBtn" type="button">Importer un fichier</button><input type="file" id="fileLoad" accept=".json,application/json" hidden></label>
+    </div>
+    <details style="margin-top:10px"><summary>Réglages</summary>
+      <div class="field"><label for="ghRepo" class="muted">Repo privé de sauvegarde (propriétaire/nom)</label><input id="ghRepo" placeholder="TGM-hub/geo-progress"></div>
+      <div class="field"><label for="ghToken" class="muted">Jeton GitHub (fine-grained, ce repo seulement, Contents : Read and write). Reste dans ce navigateur, jamais exporté.</label><input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…"></div>
+      <label class="row muted"><input type="checkbox" id="ghAuto"> Sauvegarde automatique à la fin de chaque session</label>
+      <div class="row" style="margin-top:8px">
+        <label class="muted" for="blockMin">Durée d'un bloc</label>
+        <select id="blockMin"><option>5</option><option>8</option><option selected>10</option><option>12</option><option>15</option></select>
+        <span class="muted">min</span>
+        <button id="ghTest">Tester la connexion</button>
+        <button id="replan" class="ghost">Recalculer la session 2 du jour</button>
+      </div>
+    </details>
+  </section>
+
+  <footer>Tout est stocké dans ce navigateur (localStorage de tgm-hub.github.io), partagé avec les trainers. La sauvegarde GitHub permet de changer d'appareil et de suivre la progression.</footer>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+};
+const HOST = 'https://tgm-hub.github.io/';
+const APPS = {
+  'city-placer': { name: 'City Placer', url: HOST + 'city-placer/#w' },
+  'phone-codes': { name: 'Indicatifs', url: HOST + 'phone-codes/' },
+  'cyrillic':    { name: 'Cyrillique', url: HOST + 'russian-pannels-learning/' },
+  'plates':      { name: 'Plaques', url: HOST + 'plate-trainer/', iso: HOST + 'plate-trainer/#{iso}' },
+  'bollards':    { name: 'Bollards', url: HOST + 'bollards-trainer/', iso: HOST + 'bollards-trainer/#{iso}' },
+  'sign-reader': { name: 'Sign Reader', url: HOST + 'script-identifier-geoguessr/' },
+  'vietnam':     { name: 'Provinces du Vietnam', url: HOST + 'vietnam-province-guesser/' },
+  'kabupaten':   { name: 'Kabupaten', url: HOST + 'indonesia-kabupaten/' },
+  'plonk':       { name: 'Fiche Plonk It' },
+};
+const S1 = ['city-placer', 'phone-codes', 'cyrillic'];
+const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten'];
+// Clés localStorage sauvegardées (jamais le jeton : daily.gh)
+const SAVE_KEYS = k => /^(cp\.|phonecodes\.|cyr|plateTrainer\.|signreader\.|tinhvn\.|idkab\.|atlas\.|daily\.v1$)/.test(k) || k === 'bollard-trainer-v1';
+
+// ---------------------------------------------------------------- pays
+const FR = new Intl.DisplayNames(['fr'], { type: 'region' }), EN = new Intl.DisplayNames(['en'], { type: 'region' });
+const PLONKIT = 'AD AE AL AR AT AU BD BE BG BM BO BR BT BW BY CA CH CL CN CO CR CW CZ DE DK DO EC EE EG ES FI FK FO FR GB GH GI GL GR GS GT HK HR HU ID IE IL IM IN IO IQ IS IT JE JO JP KE KG KH KR KZ LA LB LI LK LS LT LU LV MC ME MG MK ML MN MO MQ MT MX MY NA NG NL NO NP NZ OM PA PE PH PK PL PM PR PT QA RE RO RS RU RW SE SG SI SJ SK SM SN ST SZ TH TN TR TW TZ UA UG UM US UY VI VN ZA'.split(' ');
+const PLONKIT_SLUG = { GB: 'united-kingdom', IL: 'israel', CN: 'china', ST: 'sao-tome-and-principe', GS: 'south-georgia',
+  UM: 'us-minor-outlying-islands', VI: 'us-virgin-islands', PM: 'saint-pierre-and-miquelon', SJ: 'svalbard', MO: 'macau',
+  US: 'united-states', KR: 'south-korea', MK: 'north-macedonia', CZ: 'czechia', RU: 'russia', TW: 'taiwan', LA: 'laos',
+  PS: 'palestine', NL: 'netherlands', AE: 'united-arab-emirates', DO: 'dominican-republic', PR: 'puerto-rico', HK: 'hong-kong' };
+const slug = iso => PLONKIT_SLUG[iso] || EN.of(iso).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const plonkUrl = iso => 'https://www.plonkit.net/' + slug(iso);
+const flag = iso => String.fromCodePoint(...[...iso].map(c => 0x1F1A5 + c.charCodeAt(0)));
+// Niveaux de fréquence (mêmes valeurs par défaut que city-placer ; ses réglages priment)
+const TIER = {};
+[['US CA MX BR AR CL CO PE AU NZ JP KR ID PH MY TH IN RU UA TR ZA FR ES IT DE GB PL RO SE NO FI', 1],
+ ['PT IE NL BE CH AT CZ SK HU SI HR RS BG GR AL MK ME DK EE LV LT IS TW VN KH LA LK BD KZ KG MN EC BO UY GT DO PA PR KE NG GH SN UG BW TN IL JO AE', 2],
+ ['AD MC SM LI LU MT GI JE IM FO GL BM CW VI GU MP AS HK MO SG QA LB PS BT LS SZ RW RE MG CX CC', 3]]
+  .forEach(([l, t]) => l.split(' ').forEach(k => TIER[k] = t));
+const tierOf = k => +((LS.get('cp.prefs', {}).tierOv || {})[k] || TIER[k] || 4);
+const isoByEn = {}; Object.keys(TIER).concat(PLONKIT).forEach(k => { isoByEn[EN.of(k).toLowerCase()] = k; });
+isoByEn['czech republic'] = 'CZ'; isoByEn['united states of america'] = 'US'; isoByEn['the netherlands'] = 'NL'; isoByEn['russian federation'] = 'RU';
+
+// ---------------------------------------------------------------- état
+const today = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 864e5);
+let st = Object.assign({ log: [], plans: {}, notes: {}, acc: {}, set: { min: 10, auto: true }, run: null, synced: null }, LS.get('daily.v1', {}));
+const save = () => LS.set('daily.v1', st);
+const gh = Object.assign({ repo: 'TGM-hub/geo-progress', token: '' }, LS.get('daily.gh', {}));
+const saveGh = () => LS.set('daily.gh', gh);
+
+// ---------------------------------------------------------------- lecture des trainers
+function readTrainers() {
+  const r = {};
+  // city-placer : id -> [box, vus, score total, ...] ; score moyen /5000, et par pays
+  const srs = LS.get('cp.srs', {}), cp = {};
+  let seen = 0, tot = 0;
+  for (const [id, v] of Object.entries(srs)) {
+    if (!Array.isArray(v) || !v[1]) continue;
+    const p = id.split('|'), cc = p[0] === 'R' ? p[1] : p[0];
+    seen += v[1]; tot += v[2] || 0;
+    (cp[cc] = cp[cc] || { n: 0, s: 0 }); cp[cc].n += v[1]; cp[cc].s += v[2] || 0;
+  }
+  r['city-placer'] = { acc: seen ? tot / seen / 5000 : null, n: seen, per: cp, unit: 'score moyen' };
+  // bollards : pays (nom anglais) -> {seen, ok}
+  const bo = LS.get('bollard-trainer-v1', {}), bper = {}; let bs = 0, bk = 0;
+  for (const [c, p] of Object.entries(bo)) {
+    if (!p || !p.seen) continue; bs += p.seen; bk += p.ok || 0;
+    const iso = isoByEn[c.toLowerCase()]; if (iso) bper[iso] = { n: p.seen, s: p.ok || 0 };
+  }
+  r['bollards'] = { acc: bs ? bk / bs : null, n: bs, per: bper };
+  const sr = LS.get('signreader.v2', null); r['sign-reader'] = { acc: sr && sr.seen ? sr.right / sr.seen : null, n: sr ? sr.seen : 0 };
+  const vn = LS.get('tinhvn.v1', null); r['vietnam'] = { acc: vn && vn.seen ? vn.right / vn.seen : null, n: vn ? vn.seen : 0 };
+  const kb = LS.get('idkab.v1.stats', null) || {};
+  const kn = kb.seen ?? kb.n ?? kb.total ?? 0, kr = kb.right ?? kb.ok ?? kb.correct ?? null;
+  r['kabupaten'] = { acc: kn && kr != null ? kr / kn : null, n: kn };
+  const cw = LS.get('cyrW', {}), ws = Object.values(cw).filter(x => typeof x === 'number');
+  r['cyrillic'] = { acc: null, n: ws.length, hard: ws.filter(x => x > 1.5).length };
+  r['phone-codes'] = { acc: null, n: 0 }; r['plates'] = { acc: null, n: 0 };
+  return r;
+}
+
+// ---------------------------------------------------------------- plan du jour
+const lastDone = app => { for (let i = st.log.length - 1; i >= 0; i--) if (st.log[i].app === app && st.log[i].min > 0) return st.log[i].d; return null; };
+function chooseS2(tr) {
+  const d = today();
+  const scored = S2_POOL.map(app => {
+    const last = lastDone(app), gap = last ? Math.min(7, daysBetween(last, d)) : 7;
+    const acc = tr[app]?.acc;
+    const weak = acc == null ? 2 : (1 - acc) * 6;
+    const why = [last ? (gap ? `pas fait depuis ${gap} j` : 'fait aujourd’hui') : 'jamais fait',
+                 acc == null ? null : `${Math.round(acc * 100)} % de réussite`].filter(Boolean).join(' · ');
+    return { app, score: gap + weak + Math.random() * 0.5, why };
+  }).sort((a, b) => b.score - a.score);
+  return scored.slice(0, 2).map(x => ({ app: x.app, why: x.why }));
+}
+function choosePlonk(tr) {
+  const d = today(), recent = new Set(st.log.filter(e => e.app === 'plonk' && e.iso && daysBetween(e.d, d) < 21).map(e => e.iso));
+  const cands = PLONKIT.filter(k => tierOf(k) <= 2 && !recent.has(k));
+  let best = null;
+  for (const k of cands) {
+    const a = tr['city-placer'].per[k], b = tr['bollards'].per[k];
+    const w1 = a && a.n >= 3 ? 1 - a.s / a.n / 5000 : 0, w2 = b && b.n >= 3 ? 1 - b.s / b.n : 0;
+    const w = Math.max(w1, w2);
+    if (w > 0.35 && (!best || w > best.w)) best = { iso: k, w,
+      why: w1 >= w2 ? `point faible au City Placer : ${Math.round(a.s / a.n)} pts de moyenne` : `point faible aux bollards : ${Math.round(b.s / b.n * 100)} % de réussite` };
+  }
+  if (best) return best;
+  // Rotation : pays jamais faits d'abord, puis les plus anciens ; niveau 1 avant niveau 2
+  const lastP = {}; st.log.forEach(e => { if (e.app === 'plonk' && e.iso) lastP[e.iso] = e.d; });
+  const seed = [...d].reduce((a, c) => a * 31 + c.charCodeAt(0) >>> 0, 7);
+  const pool = (cands.length ? cands : PLONKIT.filter(k => tierOf(k) <= 2))
+    .map(k => ({ k, last: lastP[k] || '0000', r: (seed ^ (k.charCodeAt(0) * 977 + k.charCodeAt(1) * 131)) % 1000 }))
+    .sort((a, b) => a.last.localeCompare(b.last) || tierOf(a.k) - tierOf(b.k) || a.r - b.r);
+  return { iso: pool[0].k, why: lastP[pool[0].k] ? `rotation (dernière fois le ${lastP[pool[0].k]})` : 'rotation : pas encore étudié' };
+}
+function plan(force) {
+  const d = today();
+  if (!st.plans[d] || force) {
+    const tr = readTrainers(), p = choosePlonk(tr);
+    st.plans[d] = { s1: S1.map(app => ({ app })), s2: [{ app: 'plonk', iso: p.iso, why: p.why }, ...chooseS2(tr)] };
+    // on garde 60 jours de plans
+    Object.keys(st.plans).filter(k => daysBetween(k, d) > 60).forEach(k => delete st.plans[k]);
+    save();
+  }
+  return st.plans[d];
+}
+
+// ---------------------------------------------------------------- blocs et minuteur
+const blockId = (s, i) => `${today()}|${s}|${i}`;
+const entryFor = id => st.log.find(e => e.id === id);
+let tick = null, trainerWin = null;
+function startBlock(s, i) {
+  if (st.run) finishBlock(true);
+  const b = plan()[s][i], min = +st.set.min || 10;
+  st.run = { id: blockId(s, i), s, i, app: b.app, iso: b.iso || null, end: Date.now() + min * 60e3, total: min * 60e3, paused: null, started: Date.now() };
+  save(); openTrainer(); render(); runTimer();
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => {});
+}
+function openTrainer() {
+  const r = st.run; if (!r) return;
+  const url = r.app === 'plonk' ? plonkUrl(r.iso) : APPS[r.app].url;
+  trainerWin = window.open(url, 'gg-trainer');
+}
+function leftMs() { const r = st.run; return !r ? 0 : r.paused != null ? r.paused : r.end - Date.now(); }
+function runTimer() {
+  clearInterval(tick);
+  const upd = () => {
+    const r = st.run; if (!r) { $('timer').style.display = 'none'; document.title = 'Révision du jour · GeoGuessr'; return; }
+    const ms = Math.max(0, leftMs()), m = Math.floor(ms / 60e3), s = Math.floor(ms / 1e3) % 60;
+    const txt = `${m}:${String(s).padStart(2, '0')}`;
+    $('timer').style.display = 'block';
+    $('tLeft').textContent = txt;
+    $('tWhat').textContent = r.app === 'plonk' ? `Plonk It : ${FR.of(r.iso)}` : APPS[r.app].name;
+    $('tHint').textContent = r.paused != null ? 'En pause' : ms ? 'Le trainer est ouvert dans un autre onglet.' : 'Temps écoulé : termine le bloc.';
+    $('tPause').textContent = r.paused != null ? 'Reprendre' : 'Pause';
+    $('tBar').style.width = (100 * (1 - ms / r.total)) + '%';
+    document.title = `${ms ? '⏱ ' + txt : '✓ fini'} · ${$('tWhat').textContent}`;
+    if (!ms && r.paused == null && !r.rang) { r.rang = true; save(); ring(); }
+  };
+  upd(); tick = setInterval(upd, 1000);
+}
+function ring() {
+  try {
+    const a = new (window.AudioContext || window.webkitAudioContext)();
+    [0, .25, .5].forEach((t, i) => { const o = a.createOscillator(), g = a.createGain();
+      o.frequency.value = [660, 880, 990][i]; g.gain.setValueAtTime(.18, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + t + .22);
+      o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .25); });
+  } catch (e) {}
+  try { if (Notification.permission === 'granted') new Notification('Bloc terminé', { body: 'Reviens sur la révision pour le bloc suivant.' }); } catch (e) {}
+}
+function finishBlock(skipped) {
+  const r = st.run; if (!r) return;
+  const spent = Math.max(0, r.total - Math.max(0, leftMs()));
+  const prev = entryFor(r.id);
+  const min = skipped ? 0 : Math.max(1, Math.round(spent / 60e3));
+  const e = { id: r.id, d: today(new Date(r.started)), s: r.s, app: r.app, min, at: new Date().toISOString() };
+  if (r.iso) e.iso = r.iso;
+  if (skipped) e.skip = true;
+  if (prev) Object.assign(prev, e); else st.log.push(e);
+  st.run = null;
+  snapshotAcc();
+  save(); render(); runTimer();
+  const p = plan(), sess = p[r.s];
+  const sessDone = sess.every((b, i) => entryFor(blockId(r.s, i)));
+  if (sessDone && st.set.auto && gh.token) syncGitHub(false);
+  else if (!skipped) { const nxt = sess.findIndex((b, i) => !entryFor(blockId(r.s, i))); if (nxt >= 0) $('timer').scrollIntoView({ block: 'nearest' }); }
+}
+function snapshotAcc() {
+  const tr = readTrainers(), d = today(), snap = {};
+  for (const [k, v] of Object.entries(tr)) if (v.acc != null) snap[k] = Math.round(v.acc * 1000) / 1000;
+  st.acc[d] = snap;
+}
+$('tOpen').onclick = openTrainer;
+$('tPause').onclick = () => { const r = st.run; if (!r) return;
+  if (r.paused != null) { r.end = Date.now() + r.paused; r.paused = null; } else r.paused = Math.max(0, r.end - Date.now());
+  save(); runTimer(); };
+$('tMore').onclick = () => { const r = st.run; if (!r) return; if (r.paused != null) r.paused += 5 * 60e3; else r.end += 5 * 60e3; r.total += 5 * 60e3; r.rang = false; save(); runTimer(); };
+$('tDone').onclick = () => finishBlock(false);
+$('tSkip').onclick = () => finishBlock(true);
+
+// ---------------------------------------------------------------- rendu
+function blockHtml(s, i, b) {
+  const e = entryFor(blockId(s, i)), run = st.run && st.run.id === blockId(s, i);
+  const cls = run ? 'run' : e ? (e.skip ? 'skip' : 'done') : '';
+  const name = b.app === 'plonk' ? `${flag(b.iso)} Plonk It : ${esc(FR.of(b.iso))}` : esc(APPS[b.app].name);
+  const why = b.why ? `<span class="why">${esc(b.why)}</span>` : '';
+  const right = run ? '<span class="muted">en cours</span>'
+    : e ? `<span class="muted">${e.skip ? 'passé' : e.min + ' min'}</span> <button data-s="${s}" data-i="${i}" class="ghost">Refaire</button>`
+    : `<button data-s="${s}" data-i="${i}" class="main">Démarrer</button>`;
+  return `<div class="block ${cls}"><span class="st">${e && !e.skip ? '✓' : run ? '▶' : ''}</span><span class="nm">${name}${why}</span><span>${right}</span></div>`;
+}
+function render() {
+  const p = plan(), d = today();
+  $('date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  for (const s of ['s1', 's2']) {
+    $(s).innerHTML = p[s].map((b, i) => blockHtml(s, i, b)).join('');
+    const done = p[s].filter((b, i) => { const e = entryFor(blockId(s, i)); return e && !e.skip; }).length;
+    const min = st.log.filter(e => e.d === d && e.s === s).reduce((a, e) => a + e.min, 0);
+    $(s + 'sum').textContent = `${done}/${p[s].length} blocs · ${min} min`;
+  }
+  renderPlonk(p); renderStats();
+  $('syncState').innerHTML = st.synced ? `dernière sauvegarde GitHub : ${new Date(st.synced).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}` : gh.token ? '' : 'GitHub non configuré (voir Réglages)';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-s]'); if (!b) return;
+  startBlock(b.dataset.s, +b.dataset.i);
+});
+
+function renderPlonk(p) {
+  const b = p.s2[0], iso = b.iso, notes = st.notes[iso] || [];
+  const todayNote = notes.find(n => n.d === today());
+  $('plonk').innerHTML = `
+    <h2>Fiche Plonk It du jour <span class="muted">${esc(b.why || '')}</span></h2>
+    <div class="row"><span class="country">${flag(iso)} ${esc(FR.of(iso))}</span>
+      <a href="${plonkUrl(iso)}" target="_blank" rel="noopener">Ouvrir la page Plonk It ↗</a>
+      ${APPS.bollards.iso ? `<a href="${APPS.bollards.iso.replace('{iso}', iso.toLowerCase())}" target="_blank" rel="noopener">Bollards du pays ↗</a>` : ''}
+      <a href="${HOST}city-placer/#${iso.toLowerCase()}" target="_blank" rel="noopener">Villes du pays ↗</a></div>
+    ${notes.filter(n => n !== todayNote).length ? `<div class="muted" style="margin-top:10px">Ce que tu avais retenu :</div><ul>${
+      notes.filter(n => n !== todayNote).slice(-6).map(n => `<li>${esc(n.t)} <span class="muted">(${n.d})</span></li>`).join('')}</ul>` : ''}
+    <textarea id="note" placeholder="2 ou 3 indices à retenir, un par ligne">${esc(todayNote ? todayNote.t : '')}</textarea>
+    <div class="row" style="margin-top:6px"><button id="noteSave">Enregistrer</button><span class="muted" id="noteState"></span></div>`;
+  $('noteSave').onclick = () => {
+    const t = $('note').value.trim(), list = st.notes[iso] = (st.notes[iso] || []).filter(n => n.d !== today());
+    if (t) list.push({ d: today(), t });
+    if (!list.length) delete st.notes[iso];
+    save(); $('noteState').textContent = 'enregistré'; setTimeout(() => renderPlonk(plan()), 900);
+  };
+}
+
+function streakOf() {
+  const days = new Set(st.log.filter(e => e.min > 0).map(e => e.d));
+  let n = 0, d = new Date();
+  if (!days.has(today(d))) d.setDate(d.getDate() - 1);   // la série tient jusqu'à ce soir
+  while (days.has(today(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function spark(vals) {
+  if (vals.length < 2) return '';
+  const w = 90, h = 22, min = Math.min(...vals), max = Math.max(...vals), rg = max - min || 1;
+  const pts = vals.map((v, i) => `${(i / (vals.length - 1) * (w - 2) + 1).toFixed(1)},${(h - 2 - (v - min) / rg * (h - 4)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><polyline fill="none" stroke="#7cc7b4" stroke-width="1.6" points="${pts}"/></svg>`;
+}
+function renderStats() {
+  const d = today(), byDay = {};
+  st.log.forEach(e => { byDay[e.d] = (byDay[e.d] || 0) + e.min; });
+  const sum = n => st.log.filter(e => daysBetween(e.d, d) < n).reduce((a, e) => a + e.min, 0);
+  const daysOn = Object.keys(byDay).filter(k => byDay[k] > 0 && daysBetween(k, d) < 30).length;
+  $('streak').textContent = streakOf() ? `🔥 ${streakOf()} j d'affilée` : '';
+  $('kpis').innerHTML = `<div><b>${streakOf()}</b><span>jours d'affilée</span></div><div><b>${sum(7)}</b><span>min sur 7 jours</span></div>
+    <div><b>${sum(30)}</b><span>min sur 30 jours</span></div><div><b>${daysOn}/30</b><span>jours actifs</span></div>`;
+  // carte de chaleur : 17 semaines, colonnes = semaines (lundi en haut)
+  const start = new Date(); start.setDate(start.getDate() - 7 * 16 - ((start.getDay() + 6) % 7));
+  let cells = '';
+  for (let i = 0; i < 17 * 7; i++) {
+    const x = new Date(start); x.setDate(start.getDate() + i); const k = today(x);
+    if (k > d) { cells += '<i style="visibility:hidden"></i>'; continue; }
+    const m = byDay[k] || 0, l = m >= 50 ? 3 : m >= 25 ? 2 : m > 0 ? 1 : 0;
+    cells += `<i class="l${l}${k === d ? ' today' : ''}" title="${k} : ${m} min"></i>`;
+  }
+  $('heat').innerHTML = cells;
+  const tr = readTrainers(), accDays = Object.keys(st.acc).sort();
+  const rows = Object.keys(APPS).filter(a => a !== 'plonk').map(a => {
+    const m7 = st.log.filter(e => e.app === a && daysBetween(e.d, d) < 7).reduce((x, e) => x + e.min, 0);
+    const m30 = st.log.filter(e => e.app === a && daysBetween(e.d, d) < 30).reduce((x, e) => x + e.min, 0);
+    const t = tr[a], acc = t.acc == null ? (t.hard != null && t.n ? `${t.hard} villes difficiles` : '—') : Math.round(t.acc * 100) + ' %';
+    const series = accDays.map(k => st.acc[k][a]).filter(v => v != null);
+    const last = lastDone(a);
+    return `<tr><td>${esc(APPS[a].name)}</td><td class="n">${m7}</td><td class="n">${m30}</td><td class="n">${acc}</td><td>${spark(series)}</td><td class="muted">${last ? (daysBetween(last, d) ? 'il y a ' + daysBetween(last, d) + ' j' : 'aujourd’hui') : 'jamais'}</td></tr>`;
+  }).join('');
+  const pl = st.log.filter(e => e.app === 'plonk' && e.min > 0);
+  $('perApp').innerHTML = `<tr><th>Trainer</th><th class="n">7 j</th><th class="n">30 j</th><th class="n">Réussite</th><th>Évolution</th><th>Dernier bloc</th></tr>${rows}
+    <tr><td>Fiches Plonk It</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 7).reduce((x, e) => x + e.min, 0)}</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 30).reduce((x, e) => x + e.min, 0)}</td>
+    <td class="n">${new Set(pl.map(e => e.iso)).size} pays</td><td></td><td class="muted">${Object.keys(st.notes).length} pays annotés</td></tr>`;
+}
+
+// ---------------------------------------------------------------- sauvegarde
+function snapshot() {
+  const keys = {};
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (SAVE_KEYS(k)) keys[k] = localStorage.getItem(k); }
+  return { app: 'gg-daily', v: 1, exported: new Date().toISOString(), device: navigator.userAgent.slice(0, 80), keys };
+}
+function restore(snap) {
+  if (!snap || snap.app !== 'gg-daily' || !snap.keys) throw new Error('fichier non reconnu');
+  const n = Object.keys(snap.keys).length;
+  if (!confirm(`Remplacer la progression de ce navigateur par la sauvegarde du ${new Date(snap.exported).toLocaleString('fr-FR')} (${n} entrées) ?`)) return false;
+  for (const [k, v] of Object.entries(snap.keys)) if (SAVE_KEYS(k)) localStorage.setItem(k, v);
+  location.reload(); return true;
+}
+$('fileSave').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(snapshot(), null, 1)], { type: 'application/json' }));
+  a.download = `geo-progress-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+$('fileLoadBtn').onclick = () => $('fileLoad').click();
+$('fileLoad').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { restore(JSON.parse(await f.text())); } catch (err) { alert('Import impossible : ' + err.message); }
+  e.target.value = '';
+};
+
+// GitHub : API REST « contents », depuis le navigateur. Le jeton ne quitte jamais ce navigateur (sauf vers api.github.com).
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
+async function ghApi(path, opt = {}) {
+  if (!gh.token || !gh.repo) throw new Error('renseigne le repo et le jeton dans Réglages');
+  const r = await fetch(`https://api.github.com/repos/${gh.repo}/contents/${path}`, Object.assign({
+    headers: { Authorization: 'Bearer ' + gh.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }, opt));
+  if (r.status === 404 && (!opt.method || opt.method === 'GET')) return null;
+  if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(`GitHub ${r.status} : ${j.message || r.statusText}`); }
+  return r.json();
+}
+async function ghPut(path, text, message) {
+  const cur = await ghApi(path);
+  return ghApi(path, { method: 'PUT', body: JSON.stringify({ message, content: b64e(text), sha: cur ? cur.sha : undefined }) });
+}
+let syncing = false;
+async function syncGitHub(manual) {
+  if (syncing) return; syncing = true;
+  $('syncState').innerHTML = 'sauvegarde en cours…';
+  try {
+    snapshotAcc(); save();
+    // 1. journal mensuel (fusion avec ce que les autres appareils ont déjà envoyé)
+    const months = [...new Set(st.log.map(e => e.d.slice(0, 7)))].filter(m => !st.syncedMonths || !st.syncedMonths[m] || m >= today().slice(0, 7) || manual);
+    for (const m of months) {
+      const path = `log/${m}.jsonl`, cur = await ghApi(path), seen = new Map();
+      if (cur) b64d(cur.content).split('\n').filter(Boolean).forEach(l => { try { const e = JSON.parse(l); seen.set(e.id + '|' + e.app, e); } catch (e) {} });
+      st.log.filter(e => e.d.startsWith(m)).forEach(e => seen.set(e.id + '|' + e.app, e));
+      const text = [...seen.values()].sort((a, b) => a.at.localeCompare(b.at)).map(e => JSON.stringify(e)).join('\n') + '\n';
+      if (!cur || b64d(cur.content) !== text)
+        await ghApi(path, { method: 'PUT', body: JSON.stringify({ message: `Journal ${m}`, content: b64e(text), sha: cur ? cur.sha : undefined }) });
+      (st.syncedMonths = st.syncedMonths || {})[m] = true;
+    }
+    // 2. instantané complet (pour restaurer ou changer d'appareil)
+    await ghPut('progress/latest.json', JSON.stringify(snapshot(), null, 1), `Progression ${today()}`);
+    // 3. résumé du jour (courbes) : précision des trainers
+    await ghPut(`progress/accuracy.json`, JSON.stringify(st.acc, null, 0), `Précision ${today()}`);
+    st.synced = new Date().toISOString(); save();
+    $('syncState').innerHTML = `<span class="ok">sauvegardé à ${new Date().toLocaleTimeString('fr-FR', { timeStyle: 'short' })}</span>`;
+  } catch (err) {
+    $('syncState').innerHTML = `<span class="err">échec : ${esc(err.message)}</span>`;
+    if (manual) alert('Sauvegarde GitHub impossible : ' + err.message);
+  } finally { syncing = false; }
+}
+$('ghSave').onclick = () => syncGitHub(true);
+$('ghLoad').onclick = async () => {
+  try { const f = await ghApi('progress/latest.json'); if (!f) return alert('Aucune sauvegarde dans ' + gh.repo + '.'); restore(JSON.parse(b64d(f.content))); }
+  catch (err) { alert('Récupération impossible : ' + err.message); }
+};
+$('ghTest').onclick = async () => {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${gh.repo}`, { headers: { Authorization: 'Bearer ' + gh.token, Accept: 'application/vnd.github+json' } });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.message || r.status);
+    const w = j.permissions ? j.permissions.push : null;
+    alert(`OK : ${j.full_name}, ${j.private ? 'privé' : 'PUBLIC (rends-le privé !)'}${w === false ? ', mais pas de droit d’écriture' : ''}.`);
+  } catch (err) { alert('Connexion impossible : ' + err.message); }
+};
+
+// ---------------------------------------------------------------- réglages
+$('ghRepo').value = gh.repo; $('ghToken').value = gh.token; $('ghAuto').checked = st.set.auto !== false; $('blockMin').value = String(st.set.min || 10);
+$('ghRepo').onchange = e => { gh.repo = e.target.value.trim(); saveGh(); render(); };
+$('ghToken').onchange = e => { gh.token = e.target.value.trim(); saveGh(); render(); };
+$('ghAuto').onchange = e => { st.set.auto = e.target.checked; save(); };
+$('blockMin').onchange = e => { st.set.min = +e.target.value; save(); };
+$('replan').onclick = () => {
+  const d = today(), p = st.plans[d];
+  if (p && p.s2.some((b, i) => entryFor(blockId('s2', i)))) return alert('La session 2 est déjà commencée.');
+  plan(true); render();
+};
+
+// autre onglet (trainer) ou autre fenêtre : on relit l'état au retour
+addEventListener('storage', e => { if (e.key === 'daily.v1') { st = Object.assign(st, LS.get('daily.v1', {})); render(); runTimer(); } });
+addEventListener('focus', () => renderStats());
+render(); runTimer();
+})();
+</script>
+</body>
+</html>
