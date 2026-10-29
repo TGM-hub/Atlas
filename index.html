@@ -262,7 +262,7 @@
   // Trainers qui couvrent un pays : deeplink ({iso}) pour un trainer monde, sinon trainer de ce pays
   // Plonk It : lien vers la page publique du pays (lien seulement, aucun contenu repris).
   // Slug = nom anglais en minuscules avec tirets ; PLONKIT_SLUG corrige les exceptions.
-  const PLONKIT = 'AD AE AL AR AT AU BD BE BG BM BO BR BT BW BY CA CH CL CN CO CR CW CZ DE DK DO EC EE EG ES FI FK FO FR GB GH GI GL GR GS GT HK HR HU ID IE IL IM IN IO IQ IS IT JE JO JP KE KG KH KR KZ LA LB LI LK LS LT LU LV MC ME MG MK ML MN MO MQ MT MX MY NA NG NL NO NP OM PA PE PH PK PL PM PR PT QA RE RO RS RU RW SE SG SI SJ SK SM SN ST SZ TH TN TR TW TZ UA UG UM US UY VI ZA'.split(' ');
+  const PLONKIT = 'AD AE AL AR AT AU BD BE BG BM BO BR BT BW BY CA CH CL CN CO CR CW CZ DE DK DO EC EE EG ES FI FK FO FR GB GH GI GL GR GS GT HK HR HU ID IE IL IM IN IO IQ IS IT JE JO JP KE KG KH KR KZ LA LB LI LK LS LT LU LV MC ME MG MK ML MN MO MQ MT MX MY NA NG NL NO NP NZ OM PA PE PH PK PL PM PR PT QA RE RO RS RU RW SE SG SI SJ SK SM SN ST SZ TH TN TR TW TZ UA UG UM US UY VI VN ZA'.split(' ');
   const PLONKIT_SLUG = { GB: 'united-kingdom', IL: 'israel', CN: 'china', ST: 'sao-tome-and-principe', GS: 'south-georgia',
     UM: 'us-minor-outlying-islands', VI: 'us-virgin-islands', PM: 'saint-pierre-and-miquelon', SJ: 'svalbard', MO: 'macau' };
   const plonkitLink = iso => PLONKIT.includes(iso) ? 'https://www.plonkit.net/' + (PLONKIT_SLUG[iso] ||

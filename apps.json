@@ -503,7 +503,17 @@
       "visibility": "public",
       "scope": "country",
       "countries": [
-        "RU"
+        "BA",
+        "BG",
+        "BY",
+        "KG",
+        "KZ",
+        "ME",
+        "MK",
+        "MN",
+        "RS",
+        "RU",
+        "UA"
       ],
       "types": [
         "language",
