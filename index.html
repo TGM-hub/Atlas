@@ -63,6 +63,7 @@
   .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
   .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
   #darkToggle { margin-left: auto; }
+  #dailyLink { text-decoration: none; color: inherit; }
 
   /* --- Carte --- */
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
@@ -200,6 +201,7 @@
     <button id="searchBtn" title="Rechercher (tape n'importe où)">Rechercher<span>tape au clavier</span></button>
     <span id="chips" style="display:contents"></span>
     <button id="darkToggle" class="chip"><b>Cartes sombres</b><span class="n" id="darkState"></span></button>
+    <a id="dailyLink" class="chip" href="daily.html" title="Révision du jour (2 × 30 min)"><b>Révision</b><span class="n">⏱</span></a>
   </header>
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="Carte du monde"></svg>
