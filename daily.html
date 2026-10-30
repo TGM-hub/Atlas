@@ -142,6 +142,8 @@
 
 <script>
 (() => {
+// les trainers renvoient ici via target="gg-daily" : cet onglet est réutilisé au lieu d'en ouvrir un nouveau
+try { window.name = 'gg-daily'; } catch (e) {}
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const LS = {
