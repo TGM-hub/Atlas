@@ -1,6 +1,8 @@
 # Générateur de fiches Atlas
 
-Fiches cartographiques générées (style Atlas, sombre) : `turkey.py` (codes de provinces), `south_asia.py` (écritures Inde/Bangladesh/Sri Lanka), `indonesia.py` (toits), `vietnam_provinces.py` (63 provinces par région), `indonesia_admin.py` (38 provinces + zones de plaques), `make_relief.py` (relief.webp de la carte d'accueil).
+Fiches cartographiques générées (style Atlas, sombre) : `turkey.py` (codes de provinces), `south_asia.py` (écritures Inde/Bangladesh/Sri Lanka), `indonesia.py` (toits), `vietnam_provinces.py` (63 provinces par région), `indonesia_admin.py` (38 provinces + zones de plaques), `make_relief.py` (relief.webp de la carte d'accueil), `script_groups.py` + `script_groups_data.py` (écritures par groupe : cyrillique, slaves latins + baltes, nordiques, thaï·lao·khmer ; `python script_groups.py [clé]`, PNG dans `../scripts/`, chemin de rangement affiché).
+
+Polices de `script_groups.py` : `fonts/<paquet>/files/` tel que sorti de `npm pack @fontsource/<paquet>` (barlow, barlow-condensed, noto-sans, noto-sans-thai, noto-sans-lao, noto-sans-khmer).
 
 `data/` : géométries extraites des trainers (`vn_provinces.json` depuis vietnam-province-guesser, `id_admin.json` depuis indonesia-kabupaten), données publiques uniquement.
 
