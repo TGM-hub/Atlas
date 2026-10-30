@@ -107,7 +107,8 @@
       ],
       "types": [
         "other"
-      ]
+      ],
+      "deeplink": "https://tgm-hub.github.io/vietnam-province-guesser/#{iso}"
     },
     {
       "id": "indonesia-kabupaten",

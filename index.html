@@ -134,6 +134,18 @@
   .app b { font-weight: 600; font-size: 15px; }
   .app small { color: var(--muted); font-size: 12px; }
   .country-apps { margin: 2px 0 10px; }
+  .app-row { display: flex; gap: 6px; }
+  .app-row .app { flex: 1; flex-direction: column; gap: 2px; }
+  .app-row .app b { white-space: nowrap; }
+  .lm { border: 1.5px dashed var(--line); border-radius: 4px; padding: 6px 10px; }
+  .lm summary { cursor: pointer; font-weight: 600; font-size: 15px; color: var(--ink); }
+  .lm summary small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .lm ul { list-style: none; margin: 6px 0 2px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .lm li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; }
+  .lm li a { color: var(--ink); text-decoration: none; }
+  .lm li a:hover { color: var(--sign); }
+  .lm li .lv { flex: none; width: 18px; text-align: center; font-size: 11px; border-radius: 3px; border: 1px solid var(--line); color: var(--muted); }
+  .lm li .ml { margin-left: auto; flex: none; color: var(--muted); font-size: 12px; }
   .app .wip { margin-left: auto; flex: none; padding: 1px 6px; border: 1px solid var(--sign-soft); border-radius: 3px; color: var(--sign-soft); font-size: 11px; }
   .empty-state { color: var(--muted); font-size: 15px; line-height: 1.5; }
   kbd { font-family: inherit; font-size: 12px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 3px; }
@@ -236,6 +248,7 @@
 
 <script src="map.js"></script>
 <script src="data.js"></script>
+<script src="learnable.js"></script>
 <script>
 (() => {
   const { types, clusters, cards, apps = [] } = window.ATLAS;
@@ -744,7 +757,9 @@
   function countryTrainersEl(iso, type) {
     const list = countryApps(iso, type);
     const plonk = !type && plonkitLink(iso);
-    if (!list.length && !plonk) return null;
+    const sv = !type && (window.SV_CENTER || {})[iso];
+    const lm = !type ? (window.LEARNABLE || []).filter(m => m[2].split(' ').includes(iso)) : [];
+    if (!list.length && !plonk && !sv && !lm.length) return null;
     const box = Object.assign(document.createElement('div'), { className: 'apps country-apps' });
     list.forEach(a => {
       const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
@@ -753,10 +768,33 @@
       l.querySelector('small').textContent = `${a.types.map(t => typeLabel[t]).join(', ')} · ${nameOf(iso)}`;
       box.appendChild(l);
     });
+    // Plonk It et Street View côte à côte (liens externes, bordure pointillée)
+    const row = Object.assign(document.createElement('div'), { className: 'app-row' });
     if (plonk) {
       const l = Object.assign(document.createElement('a'), { className: 'app app-ext', href: plonk, target: '_blank', rel: 'noopener' });
-      l.innerHTML = '<b>Plonk It ↗</b><small>guide du pays, site externe</small>';
-      box.appendChild(l);
+      l.innerHTML = '<b>Plonk It ↗</b><small>guide du pays</small>';
+      row.appendChild(l);
+    }
+    if (sv) {
+      // Google Maps avec le calque de couverture Street View (data=!5m1!1e5)
+      const l = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
+        href: `https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e5` });
+      l.innerHTML = '<b>Street View ↗</b><small>couverture du pays</small>';
+      row.appendChild(l);
+    }
+    if (row.children.length) box.appendChild(row);
+    // Maps LearnableMeta du pays (GeoGuessr) : jouer, ou ouvrir la liste des metas
+    if (lm.length) {
+      const order = { B: 0, I: 1, A: 2 }, lvName = { B: 'débutant', I: 'intermédiaire', A: 'avancé' };
+      const d = Object.assign(document.createElement('details'), { className: 'lm' });
+      d.innerHTML = `<summary>Maps LearnableMeta<small>${lm.length} map${lm.length > 1 ? 's' : ''} GeoGuessr pour ${nameOf(iso)}</small></summary><ul></ul>`;
+      [...lm].sort((a, b) => order[a[1]] - order[b[1]] || a[3].localeCompare(b[3])).forEach(m => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="lv" title="${lvName[m[1]] || ''}">${m[1]}</span><a target="_blank" rel="noopener" href="https://www.geoguessr.com/maps/${m[0]}"></a><a class="ml" target="_blank" rel="noopener" href="https://learnablemeta.com/maps/${m[0]}">metas ↗</a>`;
+        li.querySelector('a').textContent = m[3] + ' ↗';
+        d.querySelector('ul').appendChild(li);
+      });
+      box.appendChild(d);
     }
     return box;
   }
