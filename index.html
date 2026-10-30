@@ -778,9 +778,9 @@
         href: `https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e5` });
       l.innerHTML = '<b>Street View ↗</b><small>couverture du pays</small>';
       row.appendChild(l);
-      // Même vue, calque Relief de Google Maps (data=!5m1!1e4, vérifié le 2026-10-31)
+      // Carte topographique : OpenTopoMap (courbes de niveau, relief ombré), même centre et zoom
       const r = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
-        href: `https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e4` });
+        href: `https://opentopomap.org/#map=${sv[2]}/${sv[0]}/${sv[1]}` });
       r.innerHTML = '<b>Relief ↗</b><small>topographie</small>';
       row.appendChild(r);
     }
