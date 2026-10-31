@@ -51,6 +51,10 @@
   .bar { height: 5px; background: var(--ocean); border-radius: 3px; overflow: hidden; margin-top: 8px; }
   .bar i { display: block; height: 100%; background: var(--sign); width: 0; transition: width 1s linear; }
   #plonk .country { font-size: 22px; font-weight: 600; }
+  .mix-pair { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 20px; font-weight: 600; }
+  .mix-n { color: var(--sign); font-size: 15px; }
+  .mix-links { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  #mix p { margin: 8px 0 0; }
   #plonk textarea { width: 100%; min-height: 70px; margin-top: 8px; resize: vertical; }
   #plonk ul { margin: 6px 0 0; padding-left: 18px; }
   #plonk li { margin: 3px 0; }
@@ -74,6 +78,10 @@
   details summary { cursor: pointer; color: var(--muted); }
   footer { color: var(--muted); font-size: 12px; text-align: center; }
 </style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
 </head>
 <body>
 <div class="wrap">
@@ -104,6 +112,8 @@
   </div>
 
   <section class="card" id="plonk"></section>
+
+  <section class="card" id="mix" hidden></section>
 
   <div class="grid2">
     <section class="card"><h2>Consistency</h2>
@@ -384,13 +394,38 @@ function render() {
     const min = st.log.filter(e => e.d === d && e.s === s).reduce((a, e) => a + e.min, 0);
     $(s + 'sum').textContent = `${done}/${p[s].length} blocks · ${min} min`;
   }
-  renderPlonk(p); renderStats();
+  renderPlonk(p); renderMix(); renderStats();
   $('syncState').innerHTML = st.synced ? `last GitHub backup: ${new Date(st.synced).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}` : gh.token ? '' : 'GitHub not set up (see Settings)';
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-s]'); if (!b) return;
   startBlock(b.dataset.s, +b.dataset.i);
 });
+
+// Confusion de la semaine (tgm.confusions, écrites par les trainers) ; à défaut de 7 jours, la plus fréquente de tout l'historique
+function renderMix() {
+  const box = $('mix');
+  if (!window.TGM || !TGM.confusions) return;
+  const week = TGM.confusions.pairs({ days: 7 }), all = week.length ? week : TGM.confusions.pairs();
+  const p = all[0];
+  box.hidden = !p;
+  if (!p) return;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const side = iso => `<span class="mix-c">${TGM.flag(iso)} ${esc(TGM.name(iso, 'en'))}</span>`;
+  const links = Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).map(([app, n]) => {
+    const info = TGM.confusions.apps[app], nm = info ? info.name : app;
+    return `<span>${esc(nm)} ×${n}: ` + [p.a, p.b].map(iso => {
+      const h = TGM.confusions.link(app, iso);
+      return h ? `<a href="${esc(h)}" target="_blank" rel="noopener">${esc(TGM.name(iso, 'en'))} ↗</a>` : '';
+    }).join(' · ') + '</span>';
+  }).join('');
+  const others = all.slice(1, 4).map(q => `${TGM.flag(q.a)}${TGM.flag(q.b)} ×${q.n}`).join(' · ');
+  box.innerHTML = `<h2>Mix-up of the week <span class="muted">${week.length ? 'last 7 days' : 'no mix-up in 7 days, all time'}</span>`
+    + `<a class="muted" style="margin-left:auto" href="confusions.html">all mix-ups →</a></h2>`
+    + `<div class="mix-pair">${side(p.a)}<span class="mix-n">⇄ ×${p.n}</span>${side(p.b)}</div>`
+    + `<div class="mix-links">${links}</div>`
+    + (others ? `<p class="muted">Next: ${others}</p>` : '');
+}
 
 function renderPlonk(p) {
   const b = p.s2[0], iso = b.iso, notes = st.notes[iso] || [];

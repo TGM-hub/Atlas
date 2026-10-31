@@ -63,7 +63,7 @@
   .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
   .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
   #darkToggle { margin-left: auto; }
-  #dailyLink { text-decoration: none; color: inherit; }
+  #dailyLink, #mixLink { text-decoration: none; color: inherit; }
 
   /* --- Carte --- */
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
@@ -123,6 +123,15 @@
   .stats div { font-size: 34px; font-weight: 700; line-height: 1; }
   .stats small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 4px; }
   .members { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mix h2 { display: flex; align-items: baseline; }
+  .mix h2 .more, .mix-via a { color: var(--muted); font-size: 12px; text-decoration: none; }
+  .mix h2 .more { margin-left: auto; font-weight: 400; }
+  .mix h2 .more:hover, .mix-via a:hover { color: var(--sign); }
+  .mix-row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+  .mix-c { padding: 2px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
+  .mix-c:hover { border-color: var(--ink); }
+  .mix-n { color: var(--sign); font-variant-numeric: tabular-nums; }
+  .mix-via { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; color: var(--muted); font-size: 12px; }
   .members button { padding: 3px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .members button:hover { border-color: var(--ink); }
   .members button.none { opacity: .5; }
@@ -175,6 +184,8 @@
   }
   #lbbar .t { flex: 1; font-size: 17px; }
   #lbbar .t small { color: var(--muted); margin-left: 8px; font-size: 14px; }
+  #lbbar .t .src { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+  #lbbar .t .src a { color: inherit; }
   #lbbar button { padding: 7px 13px; border: 1.5px solid var(--line); border-radius: 4px; font-size: 15px; background: var(--ocean); }
   #lbbar button:hover { border-color: var(--ink); }
   #lbbar button:disabled { opacity: .35; cursor: default; }
@@ -217,6 +228,10 @@
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
 </head>
 <body>
 <div id="app">
@@ -226,6 +241,7 @@
     <span id="chips" style="display:contents"></span>
     <button id="darkToggle" class="chip"><b>Dark cards</b><span class="n" id="darkState"></span></button>
     <a id="dailyLink" class="chip" href="daily.html" title="Daily review (2 × 30 min)"><b>Review</b><span class="n">⏱</span></a>
+    <a id="mixLink" class="chip" href="confusions.html" title="Countries you mix up, across trainers"><b>Mix-ups</b><span class="n">⇄</span></a>
   </header>
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="World map"></svg>
@@ -694,6 +710,7 @@
     if (state.country) {
       const iso = state.country;
       add(countryTrainersEl(iso, state.type));
+      if (!state.type) add(mixEl(iso));
       const list = countryCards(iso);
       if (!list.length) return add(empty(state.type
         ? `No “${typeLabel[state.type]}” card for this country.`
@@ -810,6 +827,34 @@
       box.appendChild(d);
     }
     return box;
+  }
+
+  // Confusions croisées (tgm.confusions, écrites par les trainers sur ce navigateur) : les pays pris pour celui-ci, ou l'inverse
+  function mixEl(iso) {
+    if (!window.TGM || !TGM.confusions) return null;
+    const pairs = TGM.confusions.pairs({ iso }).slice(0, 6);
+    if (!pairs.length) return null;
+    const s = Object.assign(document.createElement('section'), { className: 'mix' });
+    s.innerHTML = `<h2>Mixed up with<a class="more" href="confusions.html#${iso.toLowerCase()}">all mix-ups →</a></h2>`;
+    for (const p of pairs) {
+      const other = p.a === iso ? p.b : p.a;
+      const row = Object.assign(document.createElement('div'), { className: 'mix-row' });
+      const b = Object.assign(document.createElement('button'), { className: 'mix-c', title: 'Open its page' });
+      b.textContent = `${TGM.flag(other)} ${nameOf(other)}`;
+      b.onclick = () => selectCountry(other);
+      row.appendChild(b);
+      row.appendChild(Object.assign(document.createElement('span'), { className: 'mix-n', textContent: `×${p.n}` }));
+      const via = Object.assign(document.createElement('span'), { className: 'mix-via' });
+      Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).forEach(([app, n]) => {
+        const href = TGM.confusions.link(app, iso), info = TGM.confusions.apps[app];
+        const l = Object.assign(document.createElement(href ? 'a' : 'span'), { textContent: `${info ? info.name : app} ${n}` });
+        if (href) Object.assign(l, { href, target: '_blank', rel: 'noopener', title: `Train ${nameOf(iso)} in ${info.name}` });
+        via.appendChild(l);
+      });
+      row.appendChild(via);
+      s.appendChild(row);
+    }
+    return s;
   }
 
   // À compléter : pour chaque type, les pays courants (tiers 1 à 3, countries.json) couverts par une fiche ou un trainer.
@@ -933,6 +978,13 @@
     }
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
     $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${c.lowres ? ', low resolution' : ''}</small>`;
+    // Provenance (sources.json, injecté par build.py) : qui l'a faite, d'après quoi, sous quelle licence
+    if (c.src) {
+      const s = Object.assign(document.createElement('span'), { className: 'src' });
+      s.textContent = 'Source: ' + [c.src.by, c.src.from, c.src.licence].filter(Boolean).join(' · ');
+      if (c.src.url) s.append(' · ', Object.assign(document.createElement('a'), { href: c.src.url, target: '_blank', rel: 'noopener', textContent: 'link ↗' }));
+      $('lbtitle').appendChild(s);
+    }
     const i = visible.indexOf(c);
     $('lbprev').disabled = i <= 0;
     $('lbnext').disabled = i < 0 || i >= visible.length - 1;

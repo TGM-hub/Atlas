@@ -43,6 +43,13 @@ cards, problems, warnings, used_thumbs, used_full = [], [], [], set(), set()
 # Titres : le nom de fichier nettoyé (bruit, pays redondant, mots collés), sauf correction dans titles.json
 # titles.json : {"chemin/relatif/sous/images.png": "Titre voulu"} ou {"nom du fichier sans extension": "Titre"}
 TITLE_FIXES = json.loads((ROOT / "titles.json").read_text(encoding="utf-8")) if (ROOT / "titles.json").exists() else {}
+# Provenance : sources.json {"chemin/sous/images.png" ou "dossier/": {"by", "from", "licence", "url"?}} ; le dossier le plus précis gagne
+SOURCES = {k: v for k, v in json.loads((ROOT / "sources.json").read_text(encoding="utf-8")).items() if k != "_doc"} if (ROOT / "sources.json").exists() else {}
+def source_of(key):
+    if key in SOURCES:
+        return SOURCES[key]
+    folders = [k for k in SOURCES if k.endswith("/") and key.startswith(k)]
+    return SOURCES[max(folders, key=len)] if folders else None
 _world_js = (ROOT / "map.js").read_text(encoding="utf-8") if (ROOT / "map.js").exists() else ""
 _names = {}
 for _k in ("names", "namesEn"):
@@ -250,6 +257,7 @@ for f in sorted(_all):
         "invert": info["invert"],
         "light": info.get("light", False),
         "lowres": max(info["w"], info["h"]) < LOWRES_PX,
+        "src": source_of(key),
     })
 
 # Ménage : miniatures et entrées de cache orphelines
@@ -271,10 +279,18 @@ data = {"types": config["types"], "clusters": clusters, "cards": cards, "apps": 
 )
 
 low = [c["id"] for c in cards if c["lowres"]]
+nosrc = [c["id"] for c in cards if not c["src"]]
+for k in SOURCES:   # clé qui ne désigne aucune fiche : faute de frappe ou fiche renommée
+    if not any(c["id"] == k or (k.endswith("/") and c["id"].startswith(k)) for c in cards):
+        warnings.append(f"sources.json : « {k} » ne correspond à aucune fiche")
 print(f"{len(cards)} fiche(s) indexée(s), {len(shown_apps)} trainer(s).")
 if low:
     print(f"\n{len(low)} fiche(s) en basse résolution (< {LOWRES_PX} px), à remplacer si tu trouves mieux :")
     for x in low:
+        print("  -", x)
+if nosrc:
+    print(f"\n{len(nosrc)} fiche(s) sans source (à compléter dans sources.json) :")
+    for x in nosrc:
         print("  -", x)
 if warnings:
     print(f"\n{len(warnings)} avertissement(s) :")

@@ -1,0 +1,68 @@
+{
+ "_doc": "Source and licence of each Atlas card. Key: path under images/ (a file, or a folder ending with / that covers every file below it). Value: {\"by\": who made it, \"from\": what it is based on, \"licence\": ..., \"url\": optional}. build.py lists the cards with no entry; the viewer shows the line.",
+ "BR Brazil/phone/Indicatifs DDD.png": {
+  "by": "Made for the Atlas (tools/cards/brazil_ddd.py)",
+  "from": "borders: IBGE municipalities (tbrugz/geodata-br); DDD by municipality: kelvins/municipios-brasileiros; cities: DDD Brasil app; background: Natural Earth (public domain)",
+  "licence": "open data (IBGE), MIT"
+ },
+ "ID Indonesia/architecture/Toits par région.png": {
+  "by": "Made for the Atlas (tools/cards/indonesia.py)",
+  "from": "Plonk It Indonesia, rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ },
+ "ID Indonesia/other/Kabupaten/": {
+  "by": "Made for the Atlas (tools/cards/kabupaten.py)",
+  "from": "borders: geoBoundaries ADM2; provinces and background: Natural Earth (public domain)",
+  "licence": "CC BY (geoBoundaries)"
+ },
+ "ID Indonesia/other/Provinces.png": {
+  "by": "Made for the Atlas (tools/cards/indonesia_admin.py)",
+  "from": "borders: geoBoundaries (BPS, OCHA); capitals: Kepmendagri 2025 (cahyadsn/wilayah); background: Natural Earth (public domain)",
+  "licence": "CC BY 3.0 IGO (geoBoundaries), MIT"
+ },
+ "ID Indonesia/plate/Plaques par zone.png": {
+  "by": "Made for the Atlas (tools/cards/indonesia_admin.py)",
+  "from": "prefixes: Wikipedia (Vehicle registration plates of Indonesia); borders: geoBoundaries; background: Natural Earth (public domain)",
+  "licence": "CC BY-SA (Wikipedia), CC BY 3.0 IGO"
+ },
+ "PH Philippines/": {
+  "by": "Made for the Atlas (tools/cards/philippines.py)",
+  "from": "regions: PhilAtlas, EO 91-2025; clues: Plonk It Philippines, rephrased; borders and background: Natural Earth (public domain); the (local) versions add Plonk It photos, never published",
+  "licence": "own work"
+ },
+ "TR Turkey/plate+sign/Codes provinces (bornes, plaques).png": {
+  "by": "Made for the Atlas (tools/cards/turkey.py)",
+  "from": "codes: Wikipedia (plates, provinces); clues: Plonk It and geometas, rephrased; background: Natural Earth (public domain)",
+  "licence": "CC BY-SA (Wikipedia)"
+ },
+ "VN Vietnam/other/Provinces.png": {
+  "by": "Made for the Atlas (tools/cards/vietnam_provinces.py)",
+  "from": "provinces: Tỉnh Việt Nam trainer (TGM-hub), Wikipedia; 2025 merger: resolution 202/2025/QH15; background: Natural Earth (public domain)",
+  "licence": "CC BY-SA (Wikipedia)"
+ },
+ "_multi/BD+IN+LK/language/": {
+  "by": "Made for the Atlas (tools/cards/south_asia.py)",
+  "from": "Plonk It (India, Sri Lanka), rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ },
+ "_clusters/cyrillic/language/": {
+  "by": "Made for the Atlas (tools/cards/script_groups.py)",
+  "from": "Wikipedia and Plonk It, rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ },
+ "_multi/AX+DK+EE+FI+FO+IS+NO+SE/language/": {
+  "by": "Made for the Atlas (tools/cards/script_groups.py)",
+  "from": "Wikipedia and Plonk It, rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ },
+ "_multi/BA+CZ+HR+LT+LV+ME+PL+RS+SI+SK/language/": {
+  "by": "Made for the Atlas (tools/cards/script_groups.py)",
+  "from": "Wikipedia and Plonk It, rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ },
+ "_multi/KH+LA+TH/language/": {
+  "by": "Made for the Atlas (tools/cards/script_groups.py)",
+  "from": "Wikipedia and Plonk It, rephrased; background: Natural Earth (public domain)",
+  "licence": "own work"
+ }
+}

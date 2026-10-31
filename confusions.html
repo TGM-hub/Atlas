@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mix-ups · GeoGuessr</title>
+<style>
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --glass: #7cc7b4;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
+  body { padding: 20px 16px 60px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 16px; }
+  a { color: var(--glass); }
+  button, select { font: inherit; color: inherit; }
+  button { background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px; cursor: pointer; }
+  button:hover { border-color: var(--glass); }
+  button.on { background: var(--sign); color: #1a1a1a; border-color: var(--sign); }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
+  header .right { margin-left: auto; display: flex; gap: 12px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+  .filters .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .filters .lbl { color: var(--muted); font-size: 13px; margin-right: 2px; }
+  .chipx { display: inline-flex; gap: 6px; align-items: center; padding: 3px 4px 3px 10px; border: 1px solid var(--sign); border-radius: 8px; color: var(--sign); }
+  .chipx button { padding: 0 7px; border: 0; background: none; color: inherit; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--line); vertical-align: baseline; }
+  th { color: var(--muted); font-weight: 400; font-size: 13px; border-top: 0; }
+  td.n { color: var(--sign); font-variant-numeric: tabular-nums; text-align: right; width: 3.5em; }
+  .pair button { background: none; border: 0; padding: 0; color: var(--ink); font-size: 15px; }
+  .pair button:hover { color: var(--sign); }
+  .pair .x { color: var(--muted); margin: 0 6px; }
+  .via { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
+  .via a { color: var(--muted); text-decoration: none; }
+  .via a:hover { color: var(--sign); }
+  td.last { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  tr.ev td { border-top: 0; padding-top: 0; }
+  .details { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+  .details span { border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+  .empty { color: var(--muted); padding: 18px 0; }
+  @media (max-width: 640px) { td.last, th.last { display: none; } }
+</style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mix-ups</h1>
+    <span class="muted">countries you take for one another, across trainers, on this browser</span>
+    <span class="right"><a href="daily.html">Review ↗</a><a href="./">Atlas ↗</a></span>
+  </header>
+
+  <section class="card filters">
+    <div class="grp" id="period"><span class="lbl">Period</span></div>
+    <div class="grp" id="appf"><span class="lbl">Trainer</span></div>
+    <div class="grp" id="isof"></div>
+  </section>
+
+  <section class="card">
+    <table id="tbl"></table>
+    <p class="muted" id="foot"></p>
+  </section>
+</div>
+
+<script src="tgm-core.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const T = window.TGM, CF = T && T.confusions;
+  if (!CF) { $('tbl').innerHTML = '<tr><td class="empty">tgm-core.js missing: run build.cmd.</td></tr>'; return; }
+
+  const PERIODS = [[7, '7 days'], [30, '30 days'], [0, 'All time']];
+  const st = { days: 30, app: '', iso: '', open: '' };
+  const fromHash = () => { const h = location.hash.slice(1).toUpperCase(); st.iso = /^[A-Z]{2}$/.test(h) && T.has(h) ? h : ''; };
+  fromHash();
+  addEventListener('hashchange', () => { fromHash(); render(); });
+
+  const nameOf = iso => T.name(iso, 'en') || iso;
+  const ago = t => {
+    if (!t) return 'before tracking';
+    const d = Math.floor((Date.now() - t) / 864e5);
+    return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  };
+
+  function buttons(box, items, cur, set) {
+    box.querySelectorAll('button').forEach(b => b.remove());
+    for (const [v, label] of items) {
+      const b = Object.assign(document.createElement('button'), { textContent: label, className: v === cur ? 'on' : '' });
+      b.onclick = () => { set(v); render(); };
+      box.appendChild(b);
+    }
+  }
+
+  function render() {
+    buttons($('period'), PERIODS, st.days, v => st.days = v);
+    const apps = Object.keys(CF.apps);
+    buttons($('appf'), [['', 'All']].concat(apps.map(a => [a, CF.apps[a].name])), st.app, v => st.app = v);
+    $('isof').innerHTML = st.iso ? `<span class="chipx">${T.flag(st.iso)} ${esc(nameOf(st.iso))}<button title="All countries">×</button></span>` : '';
+    if (st.iso) $('isof').querySelector('button').onclick = () => { history.replaceState(null, '', location.pathname); st.iso = ''; render(); };
+
+    const pairs = CF.pairs({ days: st.days || undefined, app: st.app || undefined, iso: st.iso || undefined });
+    const evs = CF.events(), since = st.days ? Date.now() - st.days * 864e5 : 0;
+    const tbl = $('tbl');
+    if (!pairs.length) {
+      tbl.innerHTML = `<tr><td class="empty">No mix-up ${st.days ? 'in the last ' + st.days + ' days' : 'recorded yet'}${st.app ? ' in ' + esc(CF.apps[st.app].name) : ''}${st.iso ? ' for ' + esc(nameOf(st.iso)) : ''}. Wrong answers in Plates, Bollards, Sign Reader and City Placer show up here.</td></tr>`;
+      $('foot').textContent = '';
+      return;
+    }
+    let html = '<tr><th>Countries</th><th class="n">×</th><th>Where (train it ↗)</th><th class="last">Last</th></tr>';
+    for (const p of pairs.slice(0, 200)) {
+      const key = p.a + '|' + p.b;
+      const via = Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).map(([app, n]) => {
+        const nm = CF.apps[app] ? CF.apps[app].name : app;
+        const ls = [p.a, p.b].map(iso => { const h = CF.link(app, iso); return h ? `<a href="${esc(h)}" target="_blank" rel="noopener" title="${esc(nm)}: ${esc(nameOf(iso))}">${iso}</a>` : ''; }).join(' ');
+        return `<span>${esc(nm)} ${n} ${ls}</span>`;
+      }).join('');
+      html += `<tr data-k="${key}"><td class="pair"><button data-iso="${p.a}">${T.flag(p.a)} ${esc(nameOf(p.a))}</button><span class="x">⇄</span><button data-iso="${p.b}">${T.flag(p.b)} ${esc(nameOf(p.b))}</button></td>`
+        + `<td class="n">${p.n}</td><td><div class="via">${via}</div></td><td class="last">${ago(p.last)}</td></tr>`;
+      // détails (ville, langues) des erreurs datées de cette paire
+      const det = {};
+      evs.forEach(e => {
+        if (e[0] < since || !e[4] || (st.app && e[1] !== st.app)) return;
+        if ((e[2] === p.a && e[3] === p.b) || (e[2] === p.b && e[3] === p.a)) det[e[4]] = (det[e[4]] || 0) + 1;
+      });
+      const d = Object.entries(det).sort((x, y) => y[1] - x[1]).slice(0, 12);
+      if (d.length) html += `<tr class="ev"><td colspan="4"><div class="details">${d.map(([t, n]) => `<span>${esc(t)}${n > 1 ? ' ×' + n : ''}</span>`).join('')}</div></td></tr>`;
+    }
+    tbl.innerHTML = html;
+    tbl.querySelectorAll('.pair button').forEach(b => b.onclick = () => { location.hash = b.dataset.iso.toLowerCase(); });
+    const total = pairs.reduce((a, p) => a + p.n, 0);
+    $('foot').textContent = `${pairs.length} pair${pairs.length > 1 ? 's' : ''}, ${total} mix-up${total > 1 ? 's' : ''}. `
+      + (st.days ? 'Dated mix-ups only (recorded since this page exists).' : 'All time includes each trainer\'s own history from before.')
+      + ' Data stays in this browser; the Review backup to GitHub includes it.';
+  }
+  render();
+})();
+</script>
+</body>
+</html>
