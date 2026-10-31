@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Révision du jour · GeoGuessr</title>
+<title>Daily review · GeoGuessr</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱</text></svg>">
 <style>
   :root {
@@ -78,7 +78,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Révision du jour</h1>
+    <h1>Daily review</h1>
     <span class="date" id="date"></span>
     <span class="right"><span class="streak" id="streak"></span><a href="./">Atlas ↗</a></span>
   </header>
@@ -88,11 +88,11 @@
       <div class="big" id="tLeft">10:00</div>
       <div><div class="what" id="tWhat"></div><div class="muted" id="tHint"></div></div>
       <div class="btns">
-        <button id="tOpen">Rouvrir</button>
+        <button id="tOpen">Reopen</button>
         <button id="tPause">Pause</button>
         <button id="tMore">+5 min</button>
-        <button id="tDone" class="main">Terminer</button>
-        <button id="tSkip" class="ghost">Passer</button>
+        <button id="tDone" class="main">Finish</button>
+        <button id="tSkip" class="ghost">Skip</button>
       </div>
     </div>
     <div class="bar"><i id="tBar"></i></div>
@@ -106,38 +106,38 @@
   <section class="card" id="plonk"></section>
 
   <div class="grid2">
-    <section class="card"><h2>Régularité</h2>
+    <section class="card"><h2>Consistency</h2>
       <div class="kpis" id="kpis"></div>
       <div class="heat" id="heat"></div>
-      <div class="muted" style="margin-top:6px">17 dernières semaines · une case par jour, plus foncée = plus de minutes</div>
+      <div class="muted" style="margin-top:6px">Last 17 weeks · one square per day, darker = more minutes</div>
     </section>
     <section class="card"><h2>Trainers</h2><table id="perApp"></table>
-      <div class="muted" style="margin-top:6px">Précision lue dans chaque trainer (même navigateur). Courbe : un point par jour de révision.</div>
+      <div class="muted" style="margin-top:6px">Accuracy read from each trainer (same browser). Curve: one point per review day.</div>
     </section>
   </div>
 
-  <section class="card"><h2>Sauvegarde <span class="muted" id="syncState"></span></h2>
+  <section class="card"><h2>Backup <span class="muted" id="syncState"></span></h2>
     <div class="row">
-      <button id="ghSave" class="main">Sauvegarder sur GitHub</button>
-      <button id="ghLoad">Récupérer depuis GitHub</button>
-      <button id="fileSave">Exporter un fichier</button>
-      <label class="row" style="cursor:pointer"><button id="fileLoadBtn" type="button">Importer un fichier</button><input type="file" id="fileLoad" accept=".json,application/json" hidden></label>
+      <button id="ghSave" class="main">Save to GitHub</button>
+      <button id="ghLoad">Restore from GitHub</button>
+      <button id="fileSave">Export a file</button>
+      <label class="row" style="cursor:pointer"><button id="fileLoadBtn" type="button">Import a file</button><input type="file" id="fileLoad" accept=".json,application/json" hidden></label>
     </div>
-    <details style="margin-top:10px"><summary>Réglages</summary>
-      <div class="field"><label for="ghRepo" class="muted">Repo privé de sauvegarde (propriétaire/nom)</label><input id="ghRepo" placeholder="TGM-hub/geo-progress"></div>
-      <div class="field"><label for="ghToken" class="muted">Jeton GitHub (fine-grained, ce repo seulement, Contents : Read and write). Reste dans ce navigateur, jamais exporté.</label><input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…"></div>
-      <label class="row muted"><input type="checkbox" id="ghAuto"> Sauvegarde automatique à la fin de chaque session</label>
+    <details style="margin-top:10px"><summary>Settings</summary>
+      <div class="field"><label for="ghRepo" class="muted">Private backup repo (owner/name)</label><input id="ghRepo" placeholder="TGM-hub/geo-progress"></div>
+      <div class="field"><label for="ghToken" class="muted">GitHub token (fine-grained, this repo only, Contents: Read and write). Stays in this browser, never exported.</label><input id="ghToken" type="password" autocomplete="off" placeholder="github_pat_…"></div>
+      <label class="row muted"><input type="checkbox" id="ghAuto"> Automatic backup at the end of each session</label>
       <div class="row" style="margin-top:8px">
-        <label class="muted" for="blockMin">Durée d'un bloc</label>
+        <label class="muted" for="blockMin">Block length</label>
         <select id="blockMin"><option>5</option><option>8</option><option selected>10</option><option>12</option><option>15</option></select>
         <span class="muted">min</span>
-        <button id="ghTest">Tester la connexion</button>
-        <button id="replan" class="ghost">Recalculer la session 2 du jour</button>
+        <button id="ghTest">Test the connection</button>
+        <button id="replan" class="ghost">Recompute today's session 2</button>
       </div>
     </details>
   </section>
 
-  <footer>Tout est stocké dans ce navigateur (localStorage de tgm-hub.github.io), partagé avec les trainers. La sauvegarde GitHub permet de changer d'appareil et de suivre la progression.</footer>
+  <footer>Everything is stored in this browser (tgm-hub.github.io localStorage), shared with the trainers. The GitHub backup lets you switch devices and track progress.</footer>
 </div>
 
 <script src="tgm-core.js"></script>
@@ -154,14 +154,14 @@ const LS = {
 const HOST = 'https://tgm-hub.github.io/';
 const APPS = {
   'city-placer': { name: 'City Placer', url: HOST + 'city-placer/#w' },
-  'phone-codes': { name: 'Indicatifs', url: HOST + 'phone-codes/' },
-  'cyrillic':    { name: 'Cyrillique', url: HOST + 'russian-pannels-learning/' },
-  'plates':      { name: 'Plaques', url: HOST + 'plate-trainer/', iso: HOST + 'plate-trainer/#{iso}' },
+  'phone-codes': { name: 'Phone codes', url: HOST + 'phone-codes/' },
+  'cyrillic':    { name: 'Cyrillic', url: HOST + 'russian-pannels-learning/' },
+  'plates':      { name: 'Plates', url: HOST + 'plate-trainer/', iso: HOST + 'plate-trainer/#{iso}' },
   'bollards':    { name: 'Bollards', url: HOST + 'bollards-trainer/', iso: HOST + 'bollards-trainer/#{iso}' },
   'sign-reader': { name: 'Sign Reader', url: HOST + 'script-identifier-geoguessr/' },
-  'vietnam':     { name: 'Provinces du Vietnam', url: HOST + 'vietnam-province-guesser/' },
+  'vietnam':     { name: 'Vietnam provinces', url: HOST + 'vietnam-province-guesser/' },
   'kabupaten':   { name: 'Kabupaten', url: HOST + 'indonesia-kabupaten/' },
-  'plonk':       { name: 'Fiche Plonk It' },
+  'plonk':       { name: 'Plonk It page' },
 };
 const S1 = ['city-placer', 'phone-codes', 'cyrillic'];
 const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten'];
@@ -199,7 +199,7 @@ function readTrainers() {
     seen += v[1]; tot += v[2] || 0;
     (cp[cc] = cp[cc] || { n: 0, s: 0 }); cp[cc].n += v[1]; cp[cc].s += v[2] || 0;
   }
-  r['city-placer'] = { acc: seen ? tot / seen / 5000 : null, n: seen, per: cp, unit: 'score moyen' };
+  r['city-placer'] = { acc: seen ? tot / seen / 5000 : null, n: seen, per: cp, unit: 'mean score' };
   // bollards : pays (nom anglais) -> {seen, ok}
   const bo = LS.get('bollard-trainer-v1', {}), bper = {}; let bs = 0, bk = 0;
   for (const [c, p] of Object.entries(bo)) {
@@ -248,8 +248,8 @@ function chooseS2(tr) {
     const last = lastDone(app), gap = last ? Math.min(7, daysBetween(last, d)) : 7;
     const acc = tr[app]?.acc;
     const weak = acc == null ? 2 : (1 - acc) * 6;
-    const why = [last ? (gap ? `pas fait depuis ${gap} j` : 'fait aujourd’hui') : 'jamais fait',
-                 acc == null ? null : `${Math.round(acc * 100)} % de réussite`].filter(Boolean).join(' · ');
+    const why = [last ? (gap ? `not done for ${gap} d` : 'done today') : 'never done',
+                 acc == null ? null : `${Math.round(acc * 100)} % accuracy`].filter(Boolean).join(' · ');
     return { app, score: gap + weak + Math.random() * 0.5, why };
   }).sort((a, b) => b.score - a.score);
   return scored.slice(0, 2).map(x => ({ app: x.app, why: x.why }));
@@ -265,10 +265,10 @@ function choosePlonk(tr) {
     const w4 = e && e.n >= 3 ? 1 - e.s / e.n : 0;
     const w = Math.max(w1, w2, w3, w4);
     if (w > 0.35 && (!best || w > best.w)) best = { iso: k, w,
-      why: w === w1 ? `point faible au City Placer : ${Math.round(a.s / a.n)} pts de moyenne`
-        : w === w2 ? `point faible aux bollards : ${Math.round(b.s / b.n * 100)} % de réussite`
-        : w === w3 ? `point faible aux indicatifs : ${Math.round(c.s / c.n * 100)} % de réussite`
-        : `point faible aux plaques : ${Math.round(e.s / e.n * 100)} % de réussite` };
+      why: w === w1 ? `weak spot in City Placer: ${Math.round(a.s / a.n)} pts on average`
+        : w === w2 ? `weak spot in bollards: ${Math.round(b.s / b.n * 100)} % accuracy`
+        : w === w3 ? `weak spot in phone codes: ${Math.round(c.s / c.n * 100)} % accuracy`
+        : `weak spot in plates: ${Math.round(e.s / e.n * 100)} % accuracy` };
   }
   if (best) return best;
   // Rotation : pays jamais faits d'abord, puis les plus anciens ; niveau 1 avant niveau 2
@@ -277,7 +277,7 @@ function choosePlonk(tr) {
   const pool = (cands.length ? cands : PLONKIT.filter(k => tierOf(k) <= 2))
     .map(k => ({ k, last: lastP[k] || '0000', r: (seed ^ (k.charCodeAt(0) * 977 + k.charCodeAt(1) * 131)) % 1000 }))
     .sort((a, b) => a.last.localeCompare(b.last) || tierOf(a.k) - tierOf(b.k) || a.r - b.r);
-  return { iso: pool[0].k, why: lastP[pool[0].k] ? `rotation (dernière fois le ${lastP[pool[0].k]})` : 'rotation : pas encore étudié' };
+  return { iso: pool[0].k, why: lastP[pool[0].k] ? `rotation (last time on ${lastP[pool[0].k]})` : 'rotation: not studied yet' };
 }
 function plan(force) {
   const d = today();
@@ -311,16 +311,16 @@ function leftMs() { const r = st.run; return !r ? 0 : r.paused != null ? r.pause
 function runTimer() {
   clearInterval(tick);
   const upd = () => {
-    const r = st.run; if (!r) { $('timer').style.display = 'none'; document.title = 'Révision du jour · GeoGuessr'; return; }
+    const r = st.run; if (!r) { $('timer').style.display = 'none'; document.title = 'Daily review · GeoGuessr'; return; }
     const ms = Math.max(0, leftMs()), m = Math.floor(ms / 60e3), s = Math.floor(ms / 1e3) % 60;
     const txt = `${m}:${String(s).padStart(2, '0')}`;
     $('timer').style.display = 'block';
     $('tLeft').textContent = txt;
-    $('tWhat').textContent = r.app === 'plonk' ? `Plonk It : ${FR.of(r.iso)}` : APPS[r.app].name;
-    $('tHint').textContent = r.paused != null ? 'En pause' : ms ? 'Le trainer est ouvert dans un autre onglet.' : 'Temps écoulé : termine le bloc.';
-    $('tPause').textContent = r.paused != null ? 'Reprendre' : 'Pause';
+    $('tWhat').textContent = r.app === 'plonk' ? `Plonk It: ${TGM.name(r.iso, 'en')}` : APPS[r.app].name;
+    $('tHint').textContent = r.paused != null ? 'Paused' : ms ? 'The trainer is open in another tab.' : 'Time is up: finish the block.';
+    $('tPause').textContent = r.paused != null ? 'Resume' : 'Pause';
     $('tBar').style.width = (100 * (1 - ms / r.total)) + '%';
-    document.title = `${ms ? '⏱ ' + txt : '✓ fini'} · ${$('tWhat').textContent}`;
+    document.title = `${ms ? '⏱ ' + txt : '✓ done'} · ${$('tWhat').textContent}`;
     if (!ms && r.paused == null && !r.rang) { r.rang = true; save(); ring(); }
   };
   upd(); tick = setInterval(upd, 1000);
@@ -332,7 +332,7 @@ function ring() {
       o.frequency.value = [660, 880, 990][i]; g.gain.setValueAtTime(.18, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + t + .22);
       o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .25); });
   } catch (e) {}
-  try { if (Notification.permission === 'granted') new Notification('Bloc terminé', { body: 'Reviens sur la révision pour le bloc suivant.' }); } catch (e) {}
+  try { if (Notification.permission === 'granted') new Notification('Block finished', { body: 'Come back to the review for the next block.' }); } catch (e) {}
 }
 function finishBlock(skipped) {
   const r = st.run; if (!r) return;
@@ -368,24 +368,24 @@ $('tSkip').onclick = () => finishBlock(true);
 function blockHtml(s, i, b) {
   const e = entryFor(blockId(s, i)), run = st.run && st.run.id === blockId(s, i);
   const cls = run ? 'run' : e ? (e.skip ? 'skip' : 'done') : '';
-  const name = b.app === 'plonk' ? `${flag(b.iso)} Plonk It : ${esc(FR.of(b.iso))}` : esc(APPS[b.app].name);
+  const name = b.app === 'plonk' ? `${flag(b.iso)} Plonk It: ${esc(TGM.name(b.iso, 'en'))}` : esc(APPS[b.app].name);
   const why = b.why ? `<span class="why">${esc(b.why)}</span>` : '';
-  const right = run ? '<span class="muted">en cours</span>'
-    : e ? `<span class="muted">${e.skip ? 'passé' : e.min + ' min'}</span> <button data-s="${s}" data-i="${i}" class="ghost">Refaire</button>`
-    : `<button data-s="${s}" data-i="${i}" class="main">Démarrer</button>`;
+  const right = run ? '<span class="muted">running</span>'
+    : e ? `<span class="muted">${e.skip ? 'skipped' : e.min + ' min'}</span> <button data-s="${s}" data-i="${i}" class="ghost">Redo</button>`
+    : `<button data-s="${s}" data-i="${i}" class="main">Start</button>`;
   return `<div class="block ${cls}"><span class="st">${e && !e.skip ? '✓' : run ? '▶' : ''}</span><span class="nm">${name}${why}</span><span>${right}</span></div>`;
 }
 function render() {
   const p = plan(), d = today();
-  $('date').textContent = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('date').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   for (const s of ['s1', 's2']) {
     $(s).innerHTML = p[s].map((b, i) => blockHtml(s, i, b)).join('');
     const done = p[s].filter((b, i) => { const e = entryFor(blockId(s, i)); return e && !e.skip; }).length;
     const min = st.log.filter(e => e.d === d && e.s === s).reduce((a, e) => a + e.min, 0);
-    $(s + 'sum').textContent = `${done}/${p[s].length} blocs · ${min} min`;
+    $(s + 'sum').textContent = `${done}/${p[s].length} blocks · ${min} min`;
   }
   renderPlonk(p); renderStats();
-  $('syncState').innerHTML = st.synced ? `dernière sauvegarde GitHub : ${new Date(st.synced).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}` : gh.token ? '' : 'GitHub non configuré (voir Réglages)';
+  $('syncState').innerHTML = st.synced ? `last GitHub backup: ${new Date(st.synced).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}` : gh.token ? '' : 'GitHub not set up (see Settings)';
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-s]'); if (!b) return;
@@ -396,20 +396,20 @@ function renderPlonk(p) {
   const b = p.s2[0], iso = b.iso, notes = st.notes[iso] || [];
   const todayNote = notes.find(n => n.d === today());
   $('plonk').innerHTML = `
-    <h2>Fiche Plonk It du jour <span class="muted">${esc(b.why || '')}</span></h2>
-    <div class="row"><span class="country">${flag(iso)} ${esc(FR.of(iso))}</span>
-      <a href="${plonkUrl(iso)}" target="_blank" rel="noopener">Ouvrir la page Plonk It ↗</a>
-      ${APPS.bollards.iso ? `<a href="${APPS.bollards.iso.replace('{iso}', iso.toLowerCase())}" target="_blank" rel="noopener">Bollards du pays ↗</a>` : ''}
-      <a href="${HOST}city-placer/#${iso.toLowerCase()}" target="_blank" rel="noopener">Villes du pays ↗</a></div>
-    ${notes.filter(n => n !== todayNote).length ? `<div class="muted" style="margin-top:10px">Ce que tu avais retenu :</div><ul>${
+    <h2>Plonk It page of the day <span class="muted">${esc(b.why || '')}</span></h2>
+    <div class="row"><span class="country">${flag(iso)} ${esc(TGM.name(iso, 'en'))}</span>
+      <a href="${plonkUrl(iso)}" target="_blank" rel="noopener">Open the Plonk It page ↗</a>
+      ${APPS.bollards.iso ? `<a href="${APPS.bollards.iso.replace('{iso}', iso.toLowerCase())}" target="_blank" rel="noopener">Country's bollards ↗</a>` : ''}
+      <a href="${HOST}city-placer/#${iso.toLowerCase()}" target="_blank" rel="noopener">Country's cities ↗</a></div>
+    ${notes.filter(n => n !== todayNote).length ? `<div class="muted" style="margin-top:10px">What you noted before:</div><ul>${
       notes.filter(n => n !== todayNote).slice(-6).map(n => `<li>${esc(n.t)} <span class="muted">(${n.d})</span></li>`).join('')}</ul>` : ''}
-    <textarea id="note" placeholder="2 ou 3 indices à retenir, un par ligne">${esc(todayNote ? todayNote.t : '')}</textarea>
-    <div class="row" style="margin-top:6px"><button id="noteSave">Enregistrer</button><span class="muted" id="noteState"></span></div>`;
+    <textarea id="note" placeholder="2 or 3 clues to remember, one per line">${esc(todayNote ? todayNote.t : '')}</textarea>
+    <div class="row" style="margin-top:6px"><button id="noteSave">Save</button><span class="muted" id="noteState"></span></div>`;
   $('noteSave').onclick = () => {
     const t = $('note').value.trim(), list = st.notes[iso] = (st.notes[iso] || []).filter(n => n.d !== today());
     if (t) list.push({ d: today(), t });
     if (!list.length) delete st.notes[iso];
-    save(); $('noteState').textContent = 'enregistré'; setTimeout(() => renderPlonk(plan()), 900);
+    save(); $('noteState').textContent = 'saved'; setTimeout(() => renderPlonk(plan()), 900);
   };
 }
 
@@ -431,9 +431,9 @@ function renderStats() {
   st.log.forEach(e => { byDay[e.d] = (byDay[e.d] || 0) + e.min; });
   const sum = n => st.log.filter(e => daysBetween(e.d, d) < n).reduce((a, e) => a + e.min, 0);
   const daysOn = Object.keys(byDay).filter(k => byDay[k] > 0 && daysBetween(k, d) < 30).length;
-  $('streak').textContent = streakOf() ? `🔥 ${streakOf()} j d'affilée` : '';
-  $('kpis').innerHTML = `<div><b>${streakOf()}</b><span>jours d'affilée</span></div><div><b>${sum(7)}</b><span>min sur 7 jours</span></div>
-    <div><b>${sum(30)}</b><span>min sur 30 jours</span></div><div><b>${daysOn}/30</b><span>jours actifs</span></div>`;
+  $('streak').textContent = streakOf() ? `🔥 ${streakOf()}-day streak` : '';
+  $('kpis').innerHTML = `<div><b>${streakOf()}</b><span>day streak</span></div><div><b>${sum(7)}</b><span>min over 7 days</span></div>
+    <div><b>${sum(30)}</b><span>min over 30 days</span></div><div><b>${daysOn}/30</b><span>active days</span></div>`;
   // carte de chaleur : 17 semaines, colonnes = semaines (lundi en haut)
   const start = new Date(); start.setDate(start.getDate() - 7 * 16 - ((start.getDay() + 6) % 7));
   let cells = '';
@@ -448,15 +448,15 @@ function renderStats() {
   const rows = Object.keys(APPS).filter(a => a !== 'plonk').map(a => {
     const m7 = st.log.filter(e => e.app === a && daysBetween(e.d, d) < 7).reduce((x, e) => x + e.min, 0);
     const m30 = st.log.filter(e => e.app === a && daysBetween(e.d, d) < 30).reduce((x, e) => x + e.min, 0);
-    const t = tr[a], acc = t.acc == null ? (t.hard != null && t.n ? `${t.hard} villes difficiles` : '—') : Math.round(t.acc * 100) + ' %';
+    const t = tr[a], acc = t.acc == null ? (t.hard != null && t.n ? `${t.hard} hard cities` : '—') : Math.round(t.acc * 100) + ' %';
     const series = accDays.map(k => st.acc[k][a]).filter(v => v != null);
     const last = lastDone(a);
-    return `<tr><td>${esc(APPS[a].name)}</td><td class="n">${m7}</td><td class="n">${m30}</td><td class="n">${acc}</td><td>${spark(series)}</td><td class="muted">${last ? (daysBetween(last, d) ? 'il y a ' + daysBetween(last, d) + ' j' : 'aujourd’hui') : 'jamais'}</td></tr>`;
+    return `<tr><td>${esc(APPS[a].name)}</td><td class="n">${m7}</td><td class="n">${m30}</td><td class="n">${acc}</td><td>${spark(series)}</td><td class="muted">${last ? (daysBetween(last, d) ? daysBetween(last, d) + ' d ago' : 'today') : 'never'}</td></tr>`;
   }).join('');
   const pl = st.log.filter(e => e.app === 'plonk' && e.min > 0);
-  $('perApp').innerHTML = `<tr><th>Trainer</th><th class="n">7 j</th><th class="n">30 j</th><th class="n">Réussite</th><th>Évolution</th><th>Dernier bloc</th></tr>${rows}
-    <tr><td>Fiches Plonk It</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 7).reduce((x, e) => x + e.min, 0)}</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 30).reduce((x, e) => x + e.min, 0)}</td>
-    <td class="n">${new Set(pl.map(e => e.iso)).size} pays</td><td></td><td class="muted">${Object.keys(st.notes).length} pays annotés</td></tr>`;
+  $('perApp').innerHTML = `<tr><th>Trainer</th><th class="n">7d</th><th class="n">30d</th><th class="n">Accuracy</th><th>Trend</th><th>Last block</th></tr>${rows}
+    <tr><td>Plonk It pages</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 7).reduce((x, e) => x + e.min, 0)}</td><td class="n">${pl.filter(e => daysBetween(e.d, d) < 30).reduce((x, e) => x + e.min, 0)}</td>
+    <td class="n">${new Set(pl.map(e => e.iso)).size} countries</td><td></td><td class="muted">${Object.keys(st.notes).length} countries with notes</td></tr>`;
 }
 
 // ---------------------------------------------------------------- sauvegarde
@@ -466,9 +466,9 @@ function snapshot() {
   return { app: 'gg-daily', v: 1, exported: new Date().toISOString(), device: navigator.userAgent.slice(0, 80), keys };
 }
 function restore(snap) {
-  if (!snap || snap.app !== 'gg-daily' || !snap.keys) throw new Error('fichier non reconnu');
+  if (!snap || snap.app !== 'gg-daily' || !snap.keys) throw new Error('file not recognised');
   const n = Object.keys(snap.keys).length;
-  if (!confirm(`Remplacer la progression de ce navigateur par la sauvegarde du ${new Date(snap.exported).toLocaleString('fr-FR')} (${n} entrées) ?`)) return false;
+  if (!confirm(`Replace this browser's progress with the backup from ${new Date(snap.exported).toLocaleString('en-GB')} (${n} entries)?`)) return false;
   for (const [k, v] of Object.entries(snap.keys)) if (SAVE_KEYS(k)) localStorage.setItem(k, v);
   location.reload(); return true;
 }
@@ -480,7 +480,7 @@ $('fileSave').onclick = () => {
 $('fileLoadBtn').onclick = () => $('fileLoad').click();
 $('fileLoad').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  try { restore(JSON.parse(await f.text())); } catch (err) { alert('Import impossible : ' + err.message); }
+  try { restore(JSON.parse(await f.text())); } catch (err) { alert('Import failed: ' + err.message); }
   e.target.value = '';
 };
 
@@ -488,7 +488,7 @@ $('fileLoad').onchange = async e => {
 const b64e = s => btoa(unescape(encodeURIComponent(s)));
 const b64d = s => decodeURIComponent(escape(atob(s.replace(/\n/g, ''))));
 async function ghApi(path, opt = {}) {
-  if (!gh.token || !gh.repo) throw new Error('renseigne le repo et le jeton dans Réglages');
+  if (!gh.token || !gh.repo) throw new Error('fill in the repo and the token in Settings');
   const r = await fetch(`https://api.github.com/repos/${gh.repo}/contents/${path}`, Object.assign({
     headers: { Authorization: 'Bearer ' + gh.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } }, opt));
   if (r.status === 404 && (!opt.method || opt.method === 'GET')) return null;
@@ -502,7 +502,7 @@ async function ghPut(path, text, message) {
 let syncing = false;
 async function syncGitHub(manual) {
   if (syncing) return; syncing = true;
-  $('syncState').innerHTML = 'sauvegarde en cours…';
+  $('syncState').innerHTML = 'backing up…';
   try {
     snapshotAcc(); save();
     // 1. journal mensuel (fusion avec ce que les autres appareils ont déjà envoyé)
@@ -513,24 +513,24 @@ async function syncGitHub(manual) {
       st.log.filter(e => e.d.startsWith(m)).forEach(e => seen.set(e.id + '|' + e.app, e));
       const text = [...seen.values()].sort((a, b) => a.at.localeCompare(b.at)).map(e => JSON.stringify(e)).join('\n') + '\n';
       if (!cur || b64d(cur.content) !== text)
-        await ghApi(path, { method: 'PUT', body: JSON.stringify({ message: `Journal ${m}`, content: b64e(text), sha: cur ? cur.sha : undefined }) });
+        await ghApi(path, { method: 'PUT', body: JSON.stringify({ message: `Log ${m}`, content: b64e(text), sha: cur ? cur.sha : undefined }) });
       (st.syncedMonths = st.syncedMonths || {})[m] = true;
     }
     // 2. instantané complet (pour restaurer ou changer d'appareil)
-    await ghPut('progress/latest.json', JSON.stringify(snapshot(), null, 1), `Progression ${today()}`);
+    await ghPut('progress/latest.json', JSON.stringify(snapshot(), null, 1), `Progress ${today()}`);
     // 3. résumé du jour (courbes) : précision des trainers
-    await ghPut(`progress/accuracy.json`, JSON.stringify(st.acc, null, 0), `Précision ${today()}`);
+    await ghPut(`progress/accuracy.json`, JSON.stringify(st.acc, null, 0), `Accuracy ${today()}`);
     st.synced = new Date().toISOString(); save();
-    $('syncState').innerHTML = `<span class="ok">sauvegardé à ${new Date().toLocaleTimeString('fr-FR', { timeStyle: 'short' })}</span>`;
+    $('syncState').innerHTML = `<span class="ok">saved at ${new Date().toLocaleTimeString('en-GB', { timeStyle: 'short' })}</span>`;
   } catch (err) {
-    $('syncState').innerHTML = `<span class="err">échec : ${esc(err.message)}</span>`;
-    if (manual) alert('Sauvegarde GitHub impossible : ' + err.message);
+    $('syncState').innerHTML = `<span class="err">failed: ${esc(err.message)}</span>`;
+    if (manual) alert('GitHub backup failed: ' + err.message);
   } finally { syncing = false; }
 }
 $('ghSave').onclick = () => syncGitHub(true);
 $('ghLoad').onclick = async () => {
-  try { const f = await ghApi('progress/latest.json'); if (!f) return alert('Aucune sauvegarde dans ' + gh.repo + '.'); restore(JSON.parse(b64d(f.content))); }
-  catch (err) { alert('Récupération impossible : ' + err.message); }
+  try { const f = await ghApi('progress/latest.json'); if (!f) return alert('No backup in ' + gh.repo + '.'); restore(JSON.parse(b64d(f.content))); }
+  catch (err) { alert('Restore failed: ' + err.message); }
 };
 $('ghTest').onclick = async () => {
   try {
@@ -538,8 +538,8 @@ $('ghTest').onclick = async () => {
     const j = await r.json();
     if (!r.ok) throw new Error(j.message || r.status);
     const w = j.permissions ? j.permissions.push : null;
-    alert(`OK : ${j.full_name}, ${j.private ? 'privé' : 'PUBLIC (rends-le privé !)'}${w === false ? ', mais pas de droit d’écriture' : ''}.`);
-  } catch (err) { alert('Connexion impossible : ' + err.message); }
+    alert(`OK: ${j.full_name}, ${j.private ? 'private' : 'PUBLIC (make it private!)'}${w === false ? ', but no write access' : ''}.`);
+  } catch (err) { alert('Connection failed: ' + err.message); }
 };
 
 // ---------------------------------------------------------------- réglages
@@ -550,7 +550,7 @@ $('ghAuto').onchange = e => { st.set.auto = e.target.checked; save(); };
 $('blockMin').onchange = e => { st.set.min = +e.target.value; save(); };
 $('replan').onclick = () => {
   const d = today(), p = st.plans[d];
-  if (p && p.s2.some((b, i) => entryFor(blockId('s2', i)))) return alert('La session 2 est déjà commencée.');
+  if (p && p.s2.some((b, i) => entryFor(blockId('s2', i)))) return alert('Session 2 has already started.');
   plan(true); render();
 };
 

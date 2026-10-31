@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -221,16 +221,16 @@
 <body>
 <div id="app">
   <header>
-    <button id="home" title="Accueil (Échap)">Atlas</button>
-    <button id="searchBtn" title="Rechercher (tape n'importe où)">Rechercher<span>tape au clavier</span></button>
+    <button id="home" title="Home (Esc)">Atlas</button>
+    <button id="searchBtn" title="Search (type anywhere)">Search<span>just type</span></button>
     <span id="chips" style="display:contents"></span>
-    <button id="darkToggle" class="chip"><b>Cartes sombres</b><span class="n" id="darkState"></span></button>
-    <a id="dailyLink" class="chip" href="daily.html" title="Révision du jour (2 × 30 min)"><b>Révision</b><span class="n">⏱</span></a>
+    <button id="darkToggle" class="chip"><b>Dark cards</b><span class="n" id="darkState"></span></button>
+    <a id="dailyLink" class="chip" href="daily.html" title="Daily review (2 × 30 min)"><b>Review</b><span class="n">⏱</span></a>
   </header>
   <div id="mapwrap">
-    <svg id="map" role="img" aria-label="Carte du monde"></svg>
+    <svg id="map" role="img" aria-label="World map"></svg>
     <div id="tip"></div>
-    <button id="recenter" class="ghost">Recentrer</button>
+    <button id="recenter" class="ghost">Recenter</button>
   </div>
   <aside id="panel"></aside>
   <section id="board"></section>
@@ -238,9 +238,9 @@
 
 <div id="palette" role="dialog" aria-modal="true">
   <div id="pbox">
-    <input id="pinput" type="text" placeholder="phone br, plaque pologne, car paraguay…" autocomplete="off" spellcheck="false">
+    <input id="pinput" type="text" placeholder="phone br, plate poland, car paraguay…" autocomplete="off" spellcheck="false">
     <div id="presults" role="listbox"></div>
-    <div id="phelp"><kbd>↑</kbd> <kbd>↓</kbd> choisir, <kbd>Entrée</kbd> ouvrir, <kbd>Échap</kbd> fermer</div>
+    <div id="phelp"><kbd>↑</kbd> <kbd>↓</kbd> pick, <kbd>Enter</kbd> open, <kbd>Esc</kbd> close</div>
   </div>
 </div>
 
@@ -250,11 +250,11 @@
   <div id="lbmsg"></div>
   <div id="lbbar">
     <div class="t" id="lbtitle"></div>
-    <button id="lbinv" title="Inverser les couleurs de cette carte">Sombre</button>
-    <button id="lbfit" title="Ajuster (Espace)">Ajuster</button>
-    <button id="lbprev" title="Précédente (←)">Précédente</button>
-    <button id="lbnext" title="Suivante (→)">Suivante</button>
-    <button id="lbclose" title="Fermer (Échap)">Fermer</button>
+    <button id="lbinv" title="Invert the colours of this card">Dark</button>
+    <button id="lbfit" title="Fit (Space)">Fit</button>
+    <button id="lbprev" title="Previous (←)">Previous</button>
+    <button id="lbnext" title="Next (→)">Next</button>
+    <button id="lbclose" title="Close (Esc)">Close</button>
   </div>
 </div>
 
@@ -309,7 +309,7 @@
       const b = document.createElement('button');
       b.className = 'chip' + (state.type === t.key ? ' on' : '') + (n || tr.length ? '' : ' empty');
       b.innerHTML = `<b>${t.label}</b><span class="n">${n}${tr.length ? ' ↗' : ''}</span>`;
-      if (tr.length) b.title = `Trainer : ${tr.map(a => a.name.fr).join(', ')}`;
+      if (tr.length) b.title = `Trainer: ${tr.map(a => a.name.en).join(', ')}`;
       b.onclick = () => {
         // un trainer couvre ce pays pour ce type : on l'ouvre (nouvel onglet), et l'Atlas filtre ses fiches s'il en a
         if (tr.length && state.type !== t.key) window.open(appLink(tr[0], state.country), '_blank', 'noopener');
@@ -331,7 +331,7 @@
         f.appendChild(b);
       }
     }
-    $('darkState').textContent = dark ? 'oui' : 'non';
+    $('darkState').textContent = dark ? 'on' : 'off';
     $('darkToggle').classList.toggle('on', dark);
   }
   $('darkToggle').onclick = () => { dark = !dark; store.set('dark', dark); update(); };
@@ -432,7 +432,7 @@
   function paintResults() {
     presults.innerHTML = '';
     if (pinput.value.trim() && !results.length) {
-      presults.innerHTML = '<div class="pnone">Rien trouvé. Essaie un pays (FR, EN ou code ISO) et un type : « phone br », « voiture paraguay ».</div>';
+      presults.innerHTML = '<div class="pnone">Nothing found. Try a country (English, French or ISO code) and a type: “phone br”, “car paraguay”.</div>';
       return;
     }
     results.forEach((r, i) => {
@@ -446,7 +446,7 @@
         const label = r.kind === 'country' ? nameOf(r.iso) : r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
         const n = r.kind === 'country' ? countAll(r.iso) : r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
         const kind = r.kind === 'country' ? r.iso : r.kind === 'type' ? 'type' : 'cluster';
-        b.innerHTML = `<span class="ico">${kind}</span><span class="txt">${label}<small>${n > 1 ? `voir les ${n} fiches` : n ? 'voir la fiche' : 'aucune fiche pour l’instant'}</small></span>`;
+        b.innerHTML = `<span class="ico">${kind}</span><span class="txt">${label}<small>${n > 1 ? `see the ${n} cards` : n ? 'see the card' : 'no card yet'}</small></span>`;
       }
       b.onmousedown = e => { e.preventDefault(); choose(i); };
       b.onmousemove = () => { if (active !== i) { active = i; paintResults(); } };
@@ -583,7 +583,7 @@
       tip.style.display = 'block';
       tip.style.left = (e.clientX - r.left) + 'px';
       tip.style.top = (e.clientY - r.top) + 'px';
-      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' fiches' : ' fiche') : 'aucune fiche'}${tr.length ? ' · trainer ↗' : ''}</span>`;
+      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' cards' : ' card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
     } else tip.style.display = 'none';
   });
   svg.addEventListener('pointerup', e => {
@@ -610,7 +610,7 @@
       : c.countries.filter(x => x !== context).map(nameOf).join(', ');
     if (board) { [title, others, context] = state.country ? [what, '', null] : [where, what, null]; }
     b.innerHTML = `<img loading="lazy" decoding="async" class="${imgCls(c)}" src="${enc(c.thumb)}" width="${c.w}" height="${c.h}" alt="">`
-      + `<span class="cap">${title}${others ? `<small>${context ? 'aussi ' : ''}${others}</small>` : ''}${c.lowres ? '<span class="low">basse déf.</span>' : ''}</span>`;
+      + `<span class="cap">${title}${others ? `<small>${context ? 'also ' : ''}${others}</small>` : ''}${c.lowres ? '<span class="low">low res</span>' : ''}</span>`;
     b.onclick = () => openLb(c);
     visible.push(c);
     return b;
@@ -683,7 +683,7 @@
     // Un pays : rangé par type, les sous-dossiers en sections repliables
     if (state.country && countryCards(state.country).some(c => c.group)) return fillSelection(root, true);
     const list = selectionCards();
-    if (!list.length) return root.appendChild(empty('Aucune fiche pour cette sélection.'));
+    if (!list.length) return root.appendChild(empty('No card for this selection.'));
     const grid = Object.assign(document.createElement('div'), { className: 'grid' });
     list.forEach(c => grid.appendChild(cardEl(c, null, true)));
     root.appendChild(grid);
@@ -696,8 +696,8 @@
       add(countryTrainersEl(iso, state.type));
       const list = countryCards(iso);
       if (!list.length) return add(empty(state.type
-        ? `Pas de fiche « ${typeLabel[state.type]} » pour ce pays.`
-        : `Aucune fiche pour ce pays. Range-la dans images\\${iso} ${nameOf(iso)}\\<type>\\ puis lance build.cmd.`));
+        ? `No “${typeLabel[state.type]}” card for this country.`
+        : `No card for this country yet. Put it in images\\${iso} ${nameOf(iso)}\\<type>\\ and run build.cmd.`));
       for (const [t, l] of groupBy(list.filter(c => !c.cluster), c => [c.types[0]])) add(section(typeLabel[t], l, iso, null, grid));
       for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
       return;
@@ -705,24 +705,24 @@
     if (state.cluster) {
       const cl = clusters[state.cluster];
       add(membersEl());
-      add(section('Fiches du cluster', cards.filter(c => c.cluster === state.cluster && matchType(c)), null, 'group-cluster', grid));
+      add(section('Cluster cards', cards.filter(c => c.cluster === state.cluster && matchType(c)), null, 'group-cluster', grid));
       for (const iso of cl.countries) add(section(nameOf(iso), countryCards(iso).filter(c => !c.cluster), iso, null, grid));
       return;
     }
     if (state.type) {
       const list = cards.filter(matchType);
-      if (!list.length) return add(empty('Aucune fiche de ce type pour l’instant.'));
+      if (!list.length) return add(empty('No card of this type yet.'));
       add(section('World', list.filter(c => c.world), null, null, grid));
       for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
       const byCountry = groupBy(list.filter(c => !c.cluster && !c.world), c => c.countries);
-      [...byCountry.keys()].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'fr'))
+      [...byCountry.keys()].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'en'))
         .forEach(iso => add(section(nameOf(iso), byCountry.get(iso), iso, null, grid)));
     }
   }
 
   function selectionTitle() {
     if (state.country) return [nameOf(state.country), state.country + (state.type ? `, ${typeLabel[state.type]}` : '')];
-    if (state.cluster) return [clusters[state.cluster].label, `${clusters[state.cluster].countries.length} pays` + (state.type ? `, ${typeLabel[state.type]}` : '')];
+    if (state.cluster) return [clusters[state.cluster].label, `${clusters[state.cluster].countries.length} countries` + (state.type ? `, ${typeLabel[state.type]}` : '')];
     if (state.type) return [typeLabel[state.type], null];
     return null;
   }
@@ -734,7 +734,7 @@
     const t = selectionTitle();
     if (t) {
       panel.appendChild(header(t[0], t[1], [
-        ['Planche', () => { state.view = 'board'; update(); }],
+        ['Board', () => { state.view = 'board'; update(); }],
         closeBtn(() => { state.country = state.cluster = null; if (!state.country) state.type = null; update(); }),
       ]));
       fillSelection(panel, false);
@@ -743,10 +743,10 @@
     panel.appendChild(header('Atlas', null, []));
     const nCountries = new Set(cards.flatMap(c => c.countries)).size;
     const st = Object.assign(document.createElement('div'), { className: 'stats' });
-    st.innerHTML = `<div>${cards.length}<small>fiches</small></div><div>${nCountries}<small>pays couverts</small></div>`;
+    st.innerHTML = `<div>${cards.length}<small>cards</small></div><div>${nCountries}<small>countries covered</small></div>`;
     panel.appendChild(st);
     const hint = Object.assign(document.createElement('p'), { className: 'hint' });
-    hint.innerHTML = 'Tape au clavier, n’importe quand : « phone br », « plaque pl », « car paraguay ». <kbd>Entrée</kbd> ouvre la fiche. Un clic sur un pays ouvre sa fiche : trainers, liens, fiches.';
+    hint.innerHTML = 'Just type, any time: “phone br”, “plate pl”, “car paraguay”. <kbd>Enter</kbd> opens the card. Clicking a country opens its page: trainers, links, cards.';
     panel.appendChild(hint);
     const tr = trainersEl();
     tr && panel.appendChild(tr);
@@ -754,7 +754,7 @@
     gp && panel.appendChild(gp);
     if (state.dailyCard && cards.length) {
       const day = Math.floor(Date.now() / 86400000);
-      const s = section('Fiche du jour', [cards[day % cards.length]]);
+      const s = section('Card of the day', [cards[day % cards.length]]);
       s && panel.appendChild(s);
     }
     const w = section('World', cards.filter(c => c.world));
@@ -772,7 +772,7 @@
     list.forEach(a => {
       const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
       l.innerHTML = '<b></b><small></small>';
-      l.querySelector('b').textContent = `${a.name.fr} ↗`;
+      l.querySelector('b').textContent = `${a.name.en} ↗`;
       l.querySelector('small').textContent = `${a.types.map(t => typeLabel[t]).join(', ')} · ${nameOf(iso)}`;
       box.appendChild(l);
     });
@@ -780,27 +780,27 @@
     const row = Object.assign(document.createElement('div'), { className: 'app-row' });
     if (plonk) {
       const l = Object.assign(document.createElement('a'), { className: 'app app-ext', href: plonk, target: '_blank', rel: 'noopener' });
-      l.innerHTML = '<b>Plonk It ↗</b><small>guide du pays</small>';
+      l.innerHTML = '<b>Plonk It ↗</b><small>country guide</small>';
       row.appendChild(l);
     }
     if (sv) {
       // Google Maps avec le calque de couverture Street View (data=!5m1!1e5)
       const l = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
         href: `https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e5` });
-      l.innerHTML = '<b>Street View ↗</b><small>couverture du pays</small>';
+      l.innerHTML = '<b>Street View ↗</b><small>country coverage</small>';
       row.appendChild(l);
       // Carte topographique : OpenTopoMap (courbes de niveau, relief ombré), même centre et zoom
       const r = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
         href: `https://opentopomap.org/#map=${sv[2]}/${sv[0]}/${sv[1]}` });
-      r.innerHTML = '<b>Relief ↗</b><small>topographie</small>';
+      r.innerHTML = '<b>Relief ↗</b><small>topography</small>';
       row.appendChild(r);
     }
     if (row.children.length) box.appendChild(row);
     // Maps LearnableMeta du pays (GeoGuessr) : jouer, ou ouvrir la liste des metas
     if (lm.length) {
-      const order = { B: 0, I: 1, A: 2 }, lvName = { B: 'débutant', I: 'intermédiaire', A: 'avancé' };
+      const order = { B: 0, I: 1, A: 2 }, lvName = { B: 'beginner', I: 'intermediate', A: 'advanced' };
       const d = Object.assign(document.createElement('details'), { className: 'lm' });
-      d.innerHTML = `<summary>Maps LearnableMeta<small>${lm.length} map${lm.length > 1 ? 's' : ''} GeoGuessr pour ${nameOf(iso)}</small></summary><ul></ul>`;
+      d.innerHTML = `<summary>LearnableMeta maps<small>${lm.length} GeoGuessr map${lm.length > 1 ? 's' : ''} for ${nameOf(iso)}</small></summary><ul></ul>`;
       [...lm].sort((a, b) => order[a[1]] - order[b[1]] || a[3].localeCompare(b[3])).forEach(m => {
         const li = document.createElement('li');
         li.innerHTML = `<span class="lv" title="${lvName[m[1]] || ''}">${m[1]}</span><a target="_blank" rel="noopener" href="https://www.geoguessr.com/maps/${m[0]}"></a><a class="ml" target="_blank" rel="noopener" href="https://learnablemeta.com/maps/${m[0]}">metas ↗</a>`;
@@ -824,18 +824,18 @@
     const rows = types.filter(t => t.key !== 'other');
     const s = document.createElement('section');
     const d = Object.assign(document.createElement('details'), { className: 'sub', open: !!gapSel });
-    d.innerHTML = '<summary>À compléter<small>pays sans fiche ni trainer, par type</small></summary>';
+    d.innerHTML = '<summary>To fill in<small>countries with no card and no trainer, by type</small></summary>';
     const tb = Object.assign(document.createElement('table'), { className: 'gaps' });
-    tb.innerHTML = '<tr><th></th>' + TIERS.map(t => `<th>Tier ${t}<br><small>${TGM.tierNames[t].fr.toLowerCase()}</small></th>`).join('') + '</tr>';
+    tb.innerHTML = '<tr><th></th>' + TIERS.map(t => `<th>Tier ${t}<br><small>${TGM.tierNames[t].en.toLowerCase()}</small></th>`).join('') + '</tr>';
     const list = Object.assign(document.createElement('div'), { className: 'gaps-list' });
     const showList = () => {
       list.innerHTML = '';
       if (!gapSel) return;
       const [type, t] = gapSel, miss = byTier[t].filter(k => !covered(k, type)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
-      list.innerHTML = `<p>${typeLabel[type]} · tier ${t} : ${miss.length ? miss.length + ' pays sans rien' : 'tout est couvert'}</p>`;
+      list.innerHTML = `<p>${typeLabel[type]} · tier ${t}: ${miss.length ? miss.length + ' countries with nothing' : 'all covered'}</p>`;
       const m = Object.assign(document.createElement('div'), { className: 'members' });
       miss.forEach(iso => {
-        const b = Object.assign(document.createElement('button'), { textContent: nameOf(iso), title: TGM.name(iso) });
+        const b = Object.assign(document.createElement('button'), { textContent: nameOf(iso), title: TGM.name(iso, 'fr') });
         b.onclick = () => selectCountry(iso);
         m.appendChild(b);
       });
@@ -871,12 +871,12 @@
     s.innerHTML = '<h2>Trainers</h2>';
     const box = Object.assign(document.createElement('div'), { className: 'apps' });
     const order = { live: 0, wip: 1 };
-    [...apps].sort((a, b) => (order[a.status] - order[b.status]) || a.name.fr.localeCompare(b.name.fr, 'fr')).forEach(a => {
+    [...apps].sort((a, b) => (order[a.status] - order[b.status]) || a.name.en.localeCompare(b.name.en, 'en')).forEach(a => {
       const l = Object.assign(document.createElement('a'), { className: 'app', href: a.url, target: '_blank', rel: 'noopener' });
-      const where = a.scope === 'world' ? `${a.countries.length || 'tous'} pays` : a.countries.map(nameOf).join(', ');
+      const where = a.scope === 'world' ? `${a.countries.length || 'all'} countries` : a.countries.map(nameOf).join(', ');
       const what = a.types.map(t => typeLabel[t]).join(', ');
-      l.innerHTML = `<b></b><small></small>${a.status === 'wip' ? '<span class="wip">en cours</span>' : ''}`;
-      l.querySelector('b').textContent = a.name.fr;
+      l.innerHTML = `<b></b><small></small>${a.status === 'wip' ? '<span class="wip">in progress</span>' : ''}`;
+      l.querySelector('b').textContent = a.name.en;
       l.querySelector('small').textContent = `${what} · ${where}`;
       box.appendChild(l);
     });
@@ -892,7 +892,7 @@
     const t = selectionTitle();
     if (!t) return;
     board.appendChild(header(t[0], t[1], [
-      [state.country ? 'Voir la carte' : 'Voir la couverture', () => { state.view = 'map'; update(); }],
+      [state.country ? 'See the map' : 'See the coverage', () => { state.view = 'map'; update(); }],
       closeBtn(reset),
     ]));
     if (state.cluster) board.appendChild(membersEl());
@@ -929,10 +929,10 @@
     if (full.complete && full.naturalWidth) swap();
     else {
       full.addEventListener('load', swap, { once: true });
-      full.addEventListener('error', () => { if (cur === c) $('lbmsg').textContent = 'Original introuvable : relance build.cmd'; }, { once: true });
+      full.addEventListener('error', () => { if (cur === c) $('lbmsg').textContent = 'Original not found: run build.cmd again'; }, { once: true });
     }
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${c.lowres ? ', basse définition' : ''}</small>`;
+    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${c.lowres ? ', low resolution' : ''}</small>`;
     const i = visible.indexOf(c);
     $('lbprev').disabled = i <= 0;
     $('lbnext').disabled = i < 0 || i >= visible.length - 1;
