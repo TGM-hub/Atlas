@@ -549,6 +549,7 @@
       },
       "repo": "TGM-hub/russian-pannels-learning",
       "url": "https://tgm-hub.github.io/russian-pannels-learning/",
+      "deeplink": "https://tgm-hub.github.io/russian-pannels-learning/#{iso}",
       "status": "wip",
       "visibility": "public",
       "scope": "country",

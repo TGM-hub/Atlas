@@ -223,13 +223,19 @@ function readTrainers() {
   const pl = Object.values(LS.get('plateTrainer.hist', {})).filter(Array.isArray);
   const ln = pl.reduce((a, h) => a + h[0], 0), lk = pl.reduce((a, h) => a + h[1], 0);
   r['plates'] = { acc: ln ? lk / ln : null, n: ln };
-  // Trainers qui publient le résumé commun (tgm.stats.<app>) : il prime sur la lecture de leurs clés
-  const STATS_KEY = { 'phone-codes': 'phone-codes', 'plate-trainer': 'plates' };
+  // Résumé commun publié par chaque trainer (tgm.stats.<app>, voir tgm-core.js) : il prime sur la lecture de ses clés,
+  // gardée ci-dessus pour un trainer pas encore rouvert depuis la mise à jour.
+  // City Placer : correct = somme des scores / 5000, d'où l'échelle 5000 pour le score moyen par pays.
+  const STATS_KEY = { 'city-placer': 'city-placer', 'phone-codes': 'phone-codes', 'plate-trainer': 'plates', 'bollards': 'bollards',
+    'sign-reader': 'sign-reader', 'vietnam': 'vietnam', 'kabupaten': 'kabupaten', 'cyrillic': 'cyrillic' };
+  const SCALE = { 'city-placer': 5000 };
   for (const [app, s] of Object.entries(TGM.stats.all())) {
-    const k = STATS_KEY[app]; if (!k || !s || !s.seen) continue;
-    const per = {};
-    for (const [iso, c] of Object.entries(s.byCountry || {})) if (c && c.seen) per[iso] = { n: c.seen, s: c.correct || 0 };
-    r[k] = { acc: (s.correct || 0) / s.seen, n: s.seen, per, mastered: s.mastered, total: s.total };
+    const k = STATS_KEY[app]; if (!k || !s) continue;
+    if (k === 'cyrillic') { if (s.practiced) r[k] = { acc: null, n: s.practiced, hard: s.weak || 0 }; continue; }   // villes difficiles, comme avant
+    if (!s.seen) continue;
+    const per = {}, sc = SCALE[app] || 1;
+    for (const [iso, c] of Object.entries(s.byCountry || {})) if (c && c.seen) per[iso] = { n: c.seen, s: (c.correct || 0) * sc };
+    r[k] = Object.assign({}, r[k], { acc: (s.correct || 0) / s.seen, n: s.seen, per, mastered: s.mastered, total: s.total });
   }
   return r;
 }
