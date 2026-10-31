@@ -32,6 +32,7 @@ INFO = {   # name, short name, letters on the icon, pages carrying the block
     "vietnam-province-guesser": ("Vietnam provinces", "Vietnam", "VN", ["index.html"]),
     "indonesia-kabupaten": ("Indonesia kabupaten", "Kabupaten", "KB", ["index.html", "src/template.html"]),
     "russian-pannels-learning": ("Cyrillic Reader", "Cyrillic", "КИ", ["index.html"]),
+    "clue-fusion": ("Clue Fusion", "Clue Fusion", "CF", ["index.html"]),
 }
 SW = r"""// Généré par Atlas/tools/pwa.py, ne pas modifier à la main.
 const CACHE = 'tgm-__REPO__-v1';
@@ -82,7 +83,7 @@ def shell_of(root, pages):
         files.add(p)
         txt = (root / p).read_text(encoding="utf-8")
         for ref in re.findall(r'<(?:script|link)\b[^>]*?\b(?:src|href)="([^"#?]+)"', txt):
-            if not re.match(r"^(https?:|data:|//)", ref) and (root / ref).is_file() and not ref.endswith(".webmanifest"):
+            if not re.match(r"^(https?:|data:|//|\.\./)", ref) and (root / ref).is_file() and not ref.endswith(".webmanifest"):
                 files.add(ref)
     return sorted(files)
 

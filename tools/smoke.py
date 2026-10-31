@@ -40,7 +40,7 @@ JS_CLICK_CENTER = """sel => { const e = document.querySelector(sel); if (!e) ret
 APPS = {
     "Atlas": {"dir": ATLAS, "pages": [
         {"page": "index.html", "links": [["#fr", "document.querySelector('#panel h1')?.textContent.trim() === 'France'"],
-                                         ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#ua'))"]]},
+                                         ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#explore/ua'))"]]},
         {"page": "daily.html", "links": [["", "document.querySelectorAll('#perApp tr').length >= 9"]]},
         {"page": "confusions.html", "links": [["", "!!document.querySelector('#period button.on')"], ["#pl", "document.querySelector('#isof').textContent.includes('Poland')"]]},
     ]},
@@ -59,7 +59,8 @@ APPS = {
     "city-placer": {"pages": [{"page": "index.html", "wait": 2500,
         "play": "async () => { const m = window.__cpMap; await new Promise(r => m.loaded() ? r() : m.once('load', r)); const c = m.getCanvas().getBoundingClientRect(); m.fire('click', { point: { x: c.width / 2, y: c.height / 2 }, lngLat: m.getCenter(), originalEvent: new MouseEvent('click') }); }",
         "changes": ["cp.srs"],
-        "links": [["#fr", "[...document.querySelectorAll('select')].some(s => s.value === 'FR')"], ["#w", "document.body.innerText.length > 0"]]}]},
+        "links": [["#fr", "[...document.querySelectorAll('select')].some(s => s.value === 'FR')"], ["#w", "document.body.innerText.length > 0"],
+                  ["#explore/fr", "document.body.classList.contains('exploring') && document.getElementById('crumbs').textContent.includes('France')"]]}]},
     "script-identifier-geoguessr": {"pages": [{"page": "index.html",
         "play": "async () => { await new Promise(r => setTimeout(r, 300)); if (round && round.kind === 'map') { mapPick = round.target.z[0]; answerMap(); return; } document.querySelector('#options .opt:not(.hedge):not(:disabled)').click(); }",
         "changes": ["signreader.v2"],
@@ -71,11 +72,20 @@ APPS = {
     "indonesia-kabupaten": {"pages": [{"page": "index.html",
         "play": "async () => { await new Promise(r => setTimeout(r, 300)); (" + JS_CLICK_CENTER + ")('#units path.act'); }",
         "changes": ["idkab.v1.stats", "tgm.stats.kabupaten"],
-        "links": [["#plate/java", "document.querySelector('#modes .on')?.dataset.m === 'plate' && document.getElementById('zone').value === 'i:Java'"]]}]},
+        "links": [["#plate/java", "document.querySelector('#modes .on')?.dataset.m === 'plate' && document.getElementById('zone').value === 'i:Java'"],
+                  ["#explore", "document.querySelector('#modes .on')?.dataset.m === 'explore'"]]}]},
     "russian-pannels-learning": {"pages": [{"page": "index.html",
         "play": "async () => { const g = document.getElementById('guess'); g.value = 'moskva'; document.getElementById('submit').click(); await new Promise(r => setTimeout(r, 300)); (" + JS_CLICK_CENTER + ")('#gReg [data-id]'); }",
         "changes": ["cyrL"],
-        "links": [["#ua", "document.querySelector('#filter .on')?.dataset.f === 'OTHER'"], ["#regions", "document.querySelector('#mode .on')?.dataset.m === 'reg'"]]}]},
+        "links": [["#ua", "document.querySelector('#filter .on')?.dataset.f === 'OTHER'"], ["#regions", "document.querySelector('#mode .on')?.dataset.m === 'reg'"],
+                  ["#explore/ua", "document.body.classList.contains('exploring') && document.getElementById('expC').value === 'UKR' && document.querySelectorAll('#expList button').length > 0"]]}]},
+    # reads plates and bollards from the sibling repos: served from the parent folder, like on GitHub Pages
+    "clue-fusion": {"siblings": True, "pages": [{"page": "index.html", "wait": 1800,
+        "play": "async () => { document.querySelector('.opt').click(); }",
+        "changes": ["cluefusion.hist", "tgm.stats.clue-fusion"],
+        "links": [["", "window.__cf && __cf.counts.plates > 0 && __cf.counts.bollards > 0 && __cf.counts.langs > 0 && document.querySelectorAll('.clue').length >= 2"],
+                  ["#pl", "(() => { document.querySelector('.opt').click(); return document.querySelector('.verdict').textContent.includes('Poland'); })()"],
+                  ["#explore/pl", "!document.querySelector('#exp').hidden && document.querySelectorAll('#exp .clue').length > 0"]]}]},
 }
 
 
@@ -148,7 +158,9 @@ def serve(root):
 
 def browser_checks(name, root, pw, routes=None):
     errs = []
-    httpd, base = serve(root)
+    sib = APPS[name].get("siblings")
+    httpd, base = serve(root.parent if sib else root)
+    pre = root.name + "/" if sib else ""
     kind = os.environ.get("SMOKE_BROWSER", "msedge")
     browser = pw.chromium.launch(**({} if kind == "chromium" else {"channel": kind}))
     try:
@@ -160,10 +172,10 @@ def browser_checks(name, root, pw, routes=None):
                 page = ctx.new_page()
                 found = []
                 page.on("pageerror", lambda e: found.append(f"erreur JS : {str(e)[:160]}"))
-                page.on("response", lambda r: r.status >= 400 and r.url.startswith(base)
+                page.on("response", lambda r: r.status >= 400 and r.url.startswith(base + pre)
                         and found.append(f"{r.status} {r.url[len(base):]}"))
                 label = f"{name}/{spec['page']} [{vp}]"
-                page.goto(base + spec["page"], wait_until="load")
+                page.goto(base + pre + spec["page"], wait_until="load")
                 page.wait_for_timeout(spec.get("wait", 1200))
                 if spec.get("play"):
                     before = page.evaluate("ks => ks.map(k => localStorage.getItem(k))", spec["changes"])
@@ -178,7 +190,7 @@ def browser_checks(name, root, pw, routes=None):
                             found.append(f"après une réponse, {k} n'a pas changé")
                 for hsh, pred in spec.get("links", []):
                     page.goto("about:blank")                      # a hash-only change would not reload the page
-                    page.goto(base + spec["page"] + hsh, wait_until="load")
+                    page.goto(base + pre + spec["page"] + hsh, wait_until="load")
                     page.wait_for_timeout(spec.get("wait", 1200))
                     try:
                         page.wait_for_function(pred, timeout=4000)

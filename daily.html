@@ -171,12 +171,13 @@ const APPS = {
   'sign-reader': { name: 'Sign Reader', url: HOST + 'script-identifier-geoguessr/' },
   'vietnam':     { name: 'Vietnam provinces', url: HOST + 'vietnam-province-guesser/' },
   'kabupaten':   { name: 'Kabupaten', url: HOST + 'indonesia-kabupaten/' },
+  'clue-fusion': { name: 'Clue Fusion', url: HOST + 'clue-fusion/', iso: HOST + 'clue-fusion/#{iso}' },
   'plonk':       { name: 'Plonk It page' },
 };
 const S1 = ['city-placer', 'phone-codes', 'cyrillic'];
-const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten'];
+const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten', 'clue-fusion'];
 // Clés localStorage sauvegardées (jamais le jeton : daily.gh)
-const SAVE_KEYS = k => /^(tgm\.|cp\.|phonecodes\.|cyr|plateTrainer\.|signreader\.|tinhvn\.|idkab\.|atlas\.|daily\.v1$)/.test(k) || k === 'bollard-trainer-v1';
+const SAVE_KEYS = k => /^(tgm\.|cp\.|phonecodes\.|cyr|plateTrainer\.|signreader\.|tinhvn\.|idkab\.|cluefusion\.|atlas\.|daily\.v1$)/.test(k) || k === 'bollard-trainer-v1';
 
 // ---------------------------------------------------------------- pays
 const FR = new Intl.DisplayNames(['fr'], { type: 'region' }), EN = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -233,11 +234,12 @@ function readTrainers() {
   const pl = Object.values(LS.get('plateTrainer.hist', {})).filter(Array.isArray);
   const ln = pl.reduce((a, h) => a + h[0], 0), lk = pl.reduce((a, h) => a + h[1], 0);
   r['plates'] = { acc: ln ? lk / ln : null, n: ln };
+  r['clue-fusion'] = { acc: null, n: 0 };   // only its shared summary below
   // Résumé commun publié par chaque trainer (tgm.stats.<app>, voir tgm-core.js) : il prime sur la lecture de ses clés,
   // gardée ci-dessus pour un trainer pas encore rouvert depuis la mise à jour.
   // City Placer : correct = somme des scores / 5000, d'où l'échelle 5000 pour le score moyen par pays.
   const STATS_KEY = { 'city-placer': 'city-placer', 'phone-codes': 'phone-codes', 'plate-trainer': 'plates', 'bollards': 'bollards',
-    'sign-reader': 'sign-reader', 'vietnam': 'vietnam', 'kabupaten': 'kabupaten', 'cyrillic': 'cyrillic' };
+    'sign-reader': 'sign-reader', 'vietnam': 'vietnam', 'kabupaten': 'kabupaten', 'cyrillic': 'cyrillic', 'clue-fusion': 'clue-fusion' };
   const SCALE = { 'city-placer': 5000 };
   for (const [app, s] of Object.entries(TGM.stats.all())) {
     const k = STATS_KEY[app]; if (!k || !s) continue;

@@ -12,7 +12,7 @@ $Blocked = @()
 $Repos = @(
   "$Home_\city-placer", "$Home_\bollards-trainer", "$Home_\phone-codes", "$Home_\indonesia-kabupaten",
   "$Home_\plate-trainer", "$Home_\vietnam-province-guesser", "$Home_\russian-pannels-learning",
-  "$Home_\script-identifier-geoguessr", $Root
+  "$Home_\script-identifier-geoguessr", "$Home_\clue-fusion", $Root
 )
 foreach ($r in $Repos) {
     if (-not (Test-Path "$r\.git")) { continue }

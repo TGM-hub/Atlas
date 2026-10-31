@@ -848,7 +848,7 @@
       Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).forEach(([app, n]) => {
         const href = TGM.confusions.link(app, iso), info = TGM.confusions.apps[app];
         const l = Object.assign(document.createElement(href ? 'a' : 'span'), { textContent: `${info ? info.name : app} ${n}` });
-        if (href) Object.assign(l, { href, target: '_blank', rel: 'noopener', title: `Train ${nameOf(iso)} in ${info.name}` });
+        if (href) Object.assign(l, { href, target: '_blank', rel: 'noopener', title: `Explore ${nameOf(iso)} in ${info.name}` });
         via.appendChild(l);
       });
       row.appendChild(via);

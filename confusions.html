@@ -117,7 +117,7 @@
       $('foot').textContent = '';
       return;
     }
-    let html = '<tr><th>Countries</th><th class="n">×</th><th>Where (train it ↗)</th><th class="last">Last</th></tr>';
+    let html = '<tr><th>Countries</th><th class="n">×</th><th>Where (explore ↗)</th><th class="last">Last</th></tr>';
     for (const p of pairs.slice(0, 200)) {
       const key = p.a + '|' + p.b;
       const via = Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).map(([app, n]) => {

@@ -118,7 +118,7 @@ for a in apps:
     seen_ids.add(a.get("id"))
     if a.get("status") not in APP_STATUSES:
         problems.append(f"{where} : statut « {a.get('status')} » inconnu, valides : {', '.join(sorted(APP_STATUSES))}")
-    if "deeplink" in a and "{iso}" not in a["deeplink"]:
+    if "deeplink" in a and "{iso}" not in a["deeplink"] and a.get("scope") != "country":   # un trainer d'un seul pays peut viser un mode fixe (#explore)
         problems.append(f"{where} : deeplink sans {{iso}}")
     bad_t = [t for t in a.get("types", []) if t not in type_keys]
     if bad_t:
