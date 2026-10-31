@@ -37,6 +37,8 @@
   .pair button { background: none; border: 0; padding: 0; color: var(--ink); font-size: 15px; }
   .pair button:hover { color: var(--sign); }
   .pair .x { color: var(--muted); margin: 0 6px; }
+  .pair .cmp { color: var(--muted); text-decoration: none; margin-left: 6px; }
+  .pair .cmp:hover { color: var(--sign); }
   .via { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
   .via a { color: var(--muted); text-decoration: none; }
   .via a:hover { color: var(--sign); }
@@ -57,7 +59,7 @@
   <header>
     <h1>Mix-ups</h1>
     <span class="muted">countries you take for one another, across trainers, on this browser</span>
-    <span class="right"><a href="daily.html">Review ↗</a><a href="./">Atlas ↗</a></span>
+    <span class="right"><a href="compare.html">Compare ↗</a><a href="daily.html">Review ↗</a><a href="./">Atlas ↗</a></span>
   </header>
 
   <section class="card filters">
@@ -125,7 +127,7 @@
         const ls = [p.a, p.b].map(iso => { const h = CF.link(app, iso); return h ? `<a href="${esc(h)}" target="_blank" rel="noopener" title="${esc(nm)}: ${esc(nameOf(iso))}">${iso}</a>` : ''; }).join(' ');
         return `<span>${esc(nm)} ${n} ${ls}</span>`;
       }).join('');
-      html += `<tr data-k="${key}"><td class="pair"><button data-iso="${p.a}">${T.flag(p.a)} ${esc(nameOf(p.a))}</button><span class="x">⇄</span><button data-iso="${p.b}">${T.flag(p.b)} ${esc(nameOf(p.b))}</button></td>`
+      html += `<tr data-k="${key}"><td class="pair"><button data-iso="${p.a}">${T.flag(p.a)} ${esc(nameOf(p.a))}</button><span class="x">⇄</span><button data-iso="${p.b}">${T.flag(p.b)} ${esc(nameOf(p.b))}</button> <a class="cmp" href="compare.html#${p.a.toLowerCase()}/${p.b.toLowerCase()}" title="Side by side">⚖</a></td>`
         + `<td class="n">${p.n}</td><td><div class="via">${via}</div></td><td class="last">${ago(p.last)}</td></tr>`;
       // détails (ville, langues) des erreurs datées de cette paire
       const det = {};

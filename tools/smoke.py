@@ -40,8 +40,12 @@ JS_CLICK_CENTER = """sel => { const e = document.querySelector(sel); if (!e) ret
 APPS = {
     "Atlas": {"dir": ATLAS, "pages": [
         {"page": "index.html", "links": [["#fr", "document.querySelector('#panel h1')?.textContent.trim() === 'France'"],
-                                         ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#explore/ua'))"]]},
+                                         ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#explore/ua'))"],
+                                         ["", "(() => { document.getElementById('weakToggle').click(); const ok = document.getElementById('weakToggle').classList.contains('on') && !!document.querySelector('#panel .wlegend'); document.getElementById('weakToggle').click(); return ok; })()"]]},
         {"page": "daily.html", "links": [["", "document.querySelectorAll('#perApp tr').length >= 9"]]},
+        {"page": "quiz.html", "play": "async () => { document.getElementById('flip').click(); document.querySelector('#acts button[data-r=\"2\"]').click(); }",
+         "changes": ["atlas.quiz", "tgm.stats.atlas-quiz"], "links": [["#br", "document.getElementById('fIso').textContent.includes('Brazil')"]]},
+        {"page": "compare.html", "links": [["#pl/cz", "document.getElementById('selA').value === 'PL' && document.getElementById('selB').value === 'CZ' && document.querySelectorAll('#out section').length >= 3"]]},
         {"page": "confusions.html", "links": [["", "!!document.querySelector('#period button.on')"], ["#pl", "document.querySelector('#isof').textContent.includes('Poland')"]]},
     ]},
     "phone-codes": {"pages": [{"page": "index.html",

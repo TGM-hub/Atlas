@@ -172,10 +172,11 @@ const APPS = {
   'vietnam':     { name: 'Vietnam provinces', url: HOST + 'vietnam-province-guesser/' },
   'kabupaten':   { name: 'Kabupaten', url: HOST + 'indonesia-kabupaten/' },
   'clue-fusion': { name: 'Clue Fusion', url: HOST + 'clue-fusion/', iso: HOST + 'clue-fusion/#{iso}' },
+  'atlas-quiz':  { name: 'Card quiz', url: HOST + 'Atlas/quiz.html' },
   'plonk':       { name: 'Plonk It page' },
 };
 const S1 = ['city-placer', 'phone-codes', 'cyrillic'];
-const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten', 'clue-fusion'];
+const S2_POOL = ['plates', 'bollards', 'sign-reader', 'vietnam', 'kabupaten', 'clue-fusion', 'atlas-quiz'];
 // Clés localStorage sauvegardées (jamais le jeton : daily.gh)
 const SAVE_KEYS = k => /^(tgm\.|cp\.|phonecodes\.|cyr|plateTrainer\.|signreader\.|tinhvn\.|idkab\.|cluefusion\.|atlas\.|daily\.v1$)/.test(k) || k === 'bollard-trainer-v1';
 
@@ -235,11 +236,12 @@ function readTrainers() {
   const ln = pl.reduce((a, h) => a + h[0], 0), lk = pl.reduce((a, h) => a + h[1], 0);
   r['plates'] = { acc: ln ? lk / ln : null, n: ln };
   r['clue-fusion'] = { acc: null, n: 0 };   // only its shared summary below
+  r['atlas-quiz'] = { acc: null, n: 0 };
   // Résumé commun publié par chaque trainer (tgm.stats.<app>, voir tgm-core.js) : il prime sur la lecture de ses clés,
   // gardée ci-dessus pour un trainer pas encore rouvert depuis la mise à jour.
   // City Placer : correct = somme des scores / 5000, d'où l'échelle 5000 pour le score moyen par pays.
   const STATS_KEY = { 'city-placer': 'city-placer', 'phone-codes': 'phone-codes', 'plate-trainer': 'plates', 'bollards': 'bollards',
-    'sign-reader': 'sign-reader', 'vietnam': 'vietnam', 'kabupaten': 'kabupaten', 'cyrillic': 'cyrillic', 'clue-fusion': 'clue-fusion' };
+    'sign-reader': 'sign-reader', 'vietnam': 'vietnam', 'kabupaten': 'kabupaten', 'cyrillic': 'cyrillic', 'clue-fusion': 'clue-fusion', 'atlas-quiz': 'atlas-quiz' };
   const SCALE = { 'city-placer': 5000 };
   for (const [app, s] of Object.entries(TGM.stats.all())) {
     const k = STATS_KEY[app]; if (!k || !s) continue;

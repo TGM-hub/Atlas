@@ -1,6 +1,6 @@
 // Généré par Atlas/tools/pwa.py, ne pas modifier à la main.
 const CACHE = 'tgm-atlas-v1';
-const SHELL = ["./", "confusions.html", "daily.html", "data.js", "icons/icon-192.png", "index.html", "learnable.js", "manifest.webmanifest", "map.js", "tgm-core.js"];
+const SHELL = ["./", "compare.html", "confusions.html", "daily.html", "data.js", "icons/icon-192.png", "index.html", "learnable.js", "manifest.webmanifest", "map.js", "quiz.html", "tgm-core.js"];
 const THUMBS = true;   // Atlas : miniatures listées dans data.js, gardées dès la première visite
 const MEDIA = /\.(png|jpe?g|webp|gif|svg|mp3)$/i;
 

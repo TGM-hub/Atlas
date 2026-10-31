@@ -23,7 +23,7 @@ from smoke import APPS, repo_dir  # noqa: E402  (même liste de repos que les te
 
 NAVY, SIGN = "#12283a", "#f2c94c"
 INFO = {   # name, short name, letters on the icon, pages carrying the block
-    "Atlas": ("GeoGuessr Atlas", "Atlas", "A", ["index.html", "daily.html", "confusions.html"]),
+    "Atlas": ("GeoGuessr Atlas", "Atlas", "A", ["index.html", "daily.html", "confusions.html", "compare.html", "quiz.html"]),
     "phone-codes": ("Phone codes", "Phone codes", "☎", ["index.html"]),
     "plate-trainer": ("Plate Trainer", "Plates", "PL", ["index.html"]),
     "bollards-trainer": ("Bollard Trainer", "Bollards", "BO", ["index.html"]),

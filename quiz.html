@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Card quiz · GeoGuessr Atlas</title>
+<style>
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --ok: #7cc7b4; --mid: #e9cf6a; --ko: #ef7d6b;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
+  body { padding: 16px 16px 60px; }
+  .wrap { max-width: 900px; margin: 0 auto; }
+  a { color: var(--ok); }
+  button, select { font: inherit; color: inherit; }
+  button { background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  button:hover { border-color: var(--ok); }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { margin: 0; font-size: 24px; }
+  header .right { margin-left: auto; display: flex; gap: 12px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 14px; }
+  .bar select { background: var(--land); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+  .bar label { display: flex; gap: 6px; align-items: center; }
+  .bar .count { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .bar .count b { color: var(--sign); }
+  #card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .prompt .where { font-size: 26px; font-weight: 600; }
+  .prompt .what { color: var(--sign); font-size: 15px; letter-spacing: .5px; text-transform: uppercase; margin-top: 4px; }
+  .prompt .title { font-size: 18px; margin-top: 6px; }
+  .prompt .ask { color: var(--muted); margin-top: 10px; font-size: 14px; }
+  .media { margin-top: 14px; background: #0a1824; border-radius: 8px; display: grid; place-items: center; min-height: 200px; overflow: hidden; }
+  .media img { max-width: 100%; max-height: 62vh; display: block; cursor: zoom-in; }
+  img.inv { filter: invert(.9) hue-rotate(180deg); }
+  img.dim { filter: brightness(.86); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+  .actions .hint { color: var(--muted); font-size: 12px; }
+  button.primary { background: var(--sign); color: #1b2a33; border-color: var(--sign); font-weight: 600; }
+  button.r0 { border-color: var(--ko); } button.r1 { border-color: var(--mid); } button.r2 { border-color: var(--ok); }
+  button .k { display: inline-block; min-width: 18px; margin-right: 6px; color: var(--muted); font-size: 12px; }
+  .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .done { text-align: center; padding: 30px 10px; }
+  .done b { color: var(--sign); }
+  #lb { position: fixed; inset: 0; background: #000e; display: none; align-items: center; justify-content: center; z-index: 9; cursor: zoom-out; padding: 10px; }
+  #lb.open { display: flex; }
+  #lb img { max-width: 100%; max-height: 100%; }
+  @media (max-width: 600px) {
+    .prompt .where { font-size: 21px; }
+    .actions button { flex: 1; padding: 10px 8px; }
+    .actions .hint { display: none; }
+    .bar .count { margin-left: 0; width: 100%; }
+  }
+</style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Card quiz</h1>
+    <span class="muted">recall a card, flip it, rate yourself: what you miss comes back sooner</span>
+    <span class="right"><a href="daily.html">Review ↗</a><a href="./">Atlas ↗</a></span>
+  </header>
+  <div class="bar">
+    <label>Type <select id="fType"><option value="">all</option></select></label>
+    <label>Countries <select id="fTier"><option value="1">tier 1</option><option value="2">tiers 1–2</option><option value="3">tiers 1–3</option><option value="4">all</option></select></label>
+    <label><input type="checkbox" id="fWeak"> my weak countries first</label>
+    <span id="fIso"></span>
+    <span class="count" id="count"></span>
+  </div>
+  <div id="card"></div>
+</div>
+<div id="lb"><img alt=""></div>
+
+<script src="tgm-core.js"></script>
+<script src="data.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const T = window.TGM, A = window.ATLAS || { types: [], cards: [], clusters: {} };
+  const KEY = 'atlas.quiz', PKEY = 'atlas.quizPrefs';
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  const nameOf = iso => (T ? T.name(iso, 'en') : iso) || iso;
+  const typeLabel = Object.fromEntries(A.types.map(t => [t.key, t.label]));
+  let dark = lsGet('atlas.dark', true); const invOv = lsGet('atlas.inv', {});
+  const imgCls = c => dark && (c.id in invOv ? invOv[c.id] : c.invert) ? 'inv' : (dark && c.light ? 'dim' : '');
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+
+  // Leitner: box 0-5, next review after 0, 1, 3, 7, 16, 35 days ; "partly" keeps the box, "didn't know" goes back to 0
+  const DAYS = [0, 1, 3, 7, 16, 35], NEW_PER_DAY = 12, DAY = 864e5;
+  let H = lsGet(KEY, {});                 // card id -> [seen, known, box, nextDue, lastSeen]
+  const prefs = Object.assign({ type: '', tier: 3, weak: false }, lsGet(PKEY, {}));
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+
+  const place = c => c.world ? 'World' : c.cluster && A.clusters[c.cluster] ? A.clusters[c.cluster].label
+    : c.countries.length > 3 ? c.countries.length + ' countries' : c.countries.map(k => (T ? T.flag(k) + ' ' : '') + nameOf(k)).join(' + ');
+  const tierOf = c => c.world ? 1 : Math.min(...c.countries.map(k => (T && T.tier(k)) || 4));
+  let isoFilter = null;
+  const fromHash = () => { const h = location.hash.slice(1).toUpperCase(); isoFilter = /^[A-Z]{2}$/.test(h) ? h : null; };
+  fromHash();
+
+  function weakSet() {
+    const s = new Map();
+    if (!T || !T.stats) return s;
+    for (const st of Object.values(T.stats.all())) for (const [k, c] of Object.entries((st && st.byCountry) || {})) {
+      if (!c || !c.seen) continue; const v = s.get(k) || [0, 0]; v[0] += c.seen; v[1] += c.correct || 0; s.set(k, v);
+    }
+    return new Map([...s].filter(([, v]) => v[0] >= 3).map(([k, v]) => [k, v[1] / v[0]]));
+  }
+  function pool() {
+    return A.cards.filter(c => (!prefs.type || c.types.includes(prefs.type)) && (isoFilter ? c.countries.includes(isoFilter) : tierOf(c) <= prefs.tier));
+  }
+  function queue() {
+    const now = Date.now(), t0 = today(), list = pool();
+    const due = list.filter(c => H[c.id] && H[c.id][3] <= now);
+    const newToday = Object.values(H).filter(h => h[5] === t0).length;          // [5] = day it was first seen
+    let fresh = list.filter(c => !H[c.id]);
+    const w = prefs.weak ? weakSet() : null;
+    const weakScore = c => w ? Math.min(...c.countries.map(k => w.has(k) ? w.get(k) : 2)) : 0;
+    const rnd = new Map(list.map(c => [c.id, Math.random()]));
+    due.sort((a, b) => H[a.id][2] - H[b.id][2] || weakScore(a) - weakScore(b) || H[a.id][3] - H[b.id][3]);
+    fresh.sort((a, b) => weakScore(a) - weakScore(b) || tierOf(a) - tierOf(b) || rnd.get(a.id) - rnd.get(b.id));
+    fresh = isoFilter ? fresh : fresh.slice(0, Math.max(0, NEW_PER_DAY - newToday));
+    return { due, fresh, total: list.length, known: list.filter(c => H[c.id] && H[c.id][2] >= 3).length };
+  }
+
+  let cur = null, shown = false, sess = { n: 0, ok: 0 };
+  function next() {
+    const q = queue();
+    $('count').innerHTML = `<b>${q.due.length}</b> due · ${q.fresh.length} new · ${q.known}/${q.total} known`;
+    cur = q.due[0] || q.fresh[0] || null; shown = false;
+    if (!cur) {
+      const nextDue = pool().map(c => H[c.id] && H[c.id][3]).filter(Boolean).sort((a, b) => a - b)[0];
+      $('card').innerHTML = `<div class="done"><p>${sess.n ? `Done for now: <b>${sess.ok}/${sess.n}</b> known this session.` : 'Nothing to review with these filters.'}</p>`
+        + `<p class="muted">${nextDue ? 'Next card due ' + new Date(nextDue).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + '.' : ''} New cards: ${NEW_PER_DAY} a day.</p>`
+        + (isoFilter ? `<p><a href="quiz.html">All countries →</a></p>` : '') + `</div>`;
+      return;
+    }
+    const h = H[cur.id];
+    $('card').innerHTML = `<div class="prompt"><div class="where">${esc(place(cur))}</div>`
+      + `<div class="what">${esc(cur.types.map(t => typeLabel[t] || t).join(' · '))}${cur.group ? ' · ' + esc(cur.group) : ''}</div>`
+      + `<div class="title">${esc(cur.title || '')}</div>`
+      + `<div class="ask">Picture this card: what does it show, what tells the places apart? Then flip it.</div></div>`
+      + `<div class="media" id="media"><span class="muted">hidden</span></div>`
+      + `<div class="actions" id="acts"><button class="primary" id="flip">Flip <span class="k">Space</span></button><span class="hint">Space to flip, then 1 / 2 / 3</span></div>`
+      + `<div class="meta">${h ? `seen ${h[0]}× · box ${h[2]}/5` : 'new card'} · <a href="./#${cur.countries.length === 1 ? cur.countries[0].toLowerCase() : ''}">Atlas ↗</a></div>`;
+    $('flip').onclick = flip;
+    $('flip').focus({ preventScroll: true });
+  }
+  function flip() {
+    if (!cur || shown) return; shown = true;
+    $('media').innerHTML = `<img class="${imgCls(cur)}" src="${esc(enc(cur.file))}" alt="${esc(cur.title || '')}">`;
+    $('media').querySelector('img').onclick = e => { const im = $('lb').querySelector('img'); im.src = e.target.src; im.className = e.target.className; $('lb').classList.add('open'); };
+    $('acts').innerHTML = `<button class="r0" data-r="0"><span class="k">1</span>Didn't know</button><button class="r1" data-r="1"><span class="k">2</span>Partly</button><button class="r2" data-r="2"><span class="k">3</span>Knew it</button>`;
+    $('acts').querySelectorAll('button').forEach(b => b.onclick = () => rate(+b.dataset.r));
+  }
+  function rate(r) {
+    if (!cur || !shown) return;
+    const now = Date.now(), h = H[cur.id] || [0, 0, 0, 0, 0, today()];
+    h[0]++; if (r === 2) h[1]++;
+    h[2] = r === 2 ? Math.min(5, h[2] + 1) : r === 0 ? 0 : h[2];
+    h[3] = r === 0 || !DAYS[h[2]] ? now + 10 * 60e3 : today() + DAYS[h[2]] * DAY;   // missed (or still box 0): again in 10 min
+    h[4] = now; H[cur.id] = h; lsSet(KEY, H);
+    sess.n++; if (r === 2) sess.ok++;
+    pushStats(); next();
+  }
+  // Atlas daily review: tgm.stats.atlas-quiz (one item per card, country = each country of the card)
+  function pushStats() {
+    if (!T || !T.stats) return;
+    const s = { seen: 0, correct: 0, practiced: 0, mastered: 0, weak: 0, byCountry: {}, total: A.cards.length };
+    const byId = Object.fromEntries(A.cards.map(c => [c.id, c]));
+    for (const [id, h] of Object.entries(H)) {
+      const c = byId[id]; if (!c || !h[0]) continue;
+      const m = h[2] >= 4 ? 1 : 0, w = h[2] === 0 ? 1 : 0;
+      s.seen += h[0]; s.correct += h[1]; s.practiced++; s.mastered += m; s.weak += w;
+      if (c.countries.length <= 3) for (const k of c.countries) {
+        const b = s.byCountry[k] = s.byCountry[k] || { seen: 0, correct: 0, practiced: 0, mastered: 0, weak: 0 };
+        b.seen += h[0]; b.correct += h[1]; b.practiced++; b.mastered += m; b.weak += w;
+      }
+    }
+    T.stats.write('atlas-quiz', s);
+  }
+
+  // filters
+  const used = new Set(A.cards.flatMap(c => c.types));
+  $('fType').innerHTML += A.types.filter(t => used.has(t.key)).map(t => `<option value="${t.key}">${esc(t.label)}</option>`).join('');
+  $('fType').value = prefs.type; $('fTier').value = String(prefs.tier); $('fWeak').checked = prefs.weak;
+  const savePrefs = () => { lsSet(PKEY, prefs); next(); };
+  $('fType').onchange = e => { prefs.type = e.target.value; savePrefs(); };
+  $('fTier').onchange = e => { prefs.tier = +e.target.value; savePrefs(); };
+  $('fWeak').onchange = e => { prefs.weak = e.target.checked; savePrefs(); };
+  const showIso = () => {
+    $('fIso').innerHTML = isoFilter ? `<button id="isoX" title="All countries">${T ? T.flag(isoFilter) : ''} ${esc(nameOf(isoFilter))} ×</button>` : '';
+    $('fTier').disabled = !!isoFilter;
+    if (isoFilter) $('isoX').onclick = () => { history.replaceState(null, '', location.pathname); isoFilter = null; showIso(); next(); };
+  };
+  addEventListener('hashchange', () => { fromHash(); showIso(); next(); });
+  addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('select, input')) return;
+    if (e.key === 'Escape') return $('lb').classList.remove('open');
+    if (e.key === ' ' && !shown) { e.preventDefault(); flip(); return; }
+    if (shown && /^[123]$/.test(e.key)) rate(+e.key - 1);
+  });
+  $('lb').onclick = () => $('lb').classList.remove('open');
+  showIso(); pushStats(); next();
+})();
+</script>
+</body>
+</html>

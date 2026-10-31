@@ -63,7 +63,7 @@
   .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
   .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
   #darkToggle { margin-left: auto; }
-  #dailyLink, #mixLink { text-decoration: none; color: inherit; }
+  #dailyLink, #mixLink, #cmpLink, #quizLink { text-decoration: none; color: inherit; }
 
   /* --- Carte --- */
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
@@ -73,6 +73,9 @@
   #map { transform-origin: 0 0; will-change: transform; }
   #map .c1 { fill: var(--sign-soft); }
   #map .c2 { fill: var(--sign); }
+  /* Weak spots: colour = your accuracy across trainers (tgm.stats), grey = not enough answers */
+  #map .w0 { fill: #d9614c; } #map .w1 { fill: #e8995a; } #map .w2 { fill: #e9cf6a; } #map .w3 { fill: #9fcb7a; } #map .w4 { fill: #5fae7e; }
+  #map .wmix { stroke: #ff5fa2; stroke-width: calc(var(--sw, .6) * 2.4); }
   #map .hover { fill: var(--land-hover); }
   #map .c1.hover, #map .c2.hover { fill: #ffe08a; }
   #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
@@ -123,6 +126,19 @@
   .stats div { font-size: 34px; font-weight: 700; line-height: 1; }
   .stats small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 4px; }
   .members { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wlegend { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 4px 0 8px; }
+  .wlegend i { width: 18px; height: 10px; border-radius: 2px; display: inline-block; }
+  .wlegend .mx { border: 2px solid #ff5fa2; background: none; width: 14px; }
+  .wlist { display: flex; flex-direction: column; }
+  .wrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); font: inherit; }
+  .wrow:hover b { color: var(--sign); }
+  .wrow .acc { font-variant-numeric: tabular-nums; }
+  .wrow small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+  .wbar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; grid-column: 1 / -1; }
+  .wbar i { display: block; height: 100%; }
+  .res-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+  .res-row span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .res-row b { font-variant-numeric: tabular-nums; font-weight: 600; }
   .mix h2 { display: flex; align-items: baseline; }
   .mix h2 .more, .mix-via a { color: var(--muted); font-size: 12px; text-decoration: none; }
   .mix h2 .more { margin-left: auto; font-weight: 400; }
@@ -131,6 +147,8 @@
   .mix-c { padding: 2px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .mix-c:hover { border-color: var(--ink); }
   .mix-n { color: var(--sign); font-variant-numeric: tabular-nums; }
+  .mix-cmp { color: var(--muted); text-decoration: none; padding: 0 2px; }
+  .mix-cmp:hover { color: var(--sign); }
   .mix-via { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; color: var(--muted); font-size: 12px; }
   .members button { padding: 3px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .members button:hover { border-color: var(--ink); }
@@ -223,8 +241,40 @@
   #strip img { display: block; height: 56px; width: auto; }
   #lbmsg { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #e3a35a; font-size: 15px; }
 
+  #menuBtn { display: none; }
+  #tools { display: contents; }
   @media (max-width: 900px) {
     #app { grid-template-columns: 1fr; grid-template-rows: auto 45% 1fr; }
+  }
+  /* --- Téléphone : en-tête compact (☰), types en bande défilante, carte puis panneau dans le flux de la page --- */
+  @media (max-width: 700px) {
+    html, body { height: auto; overflow: auto; }
+    #app { display: block; height: auto; padding: 10px 12px calc(20px + var(--gutter-bottom)); }
+    header { flex-wrap: nowrap; gap: 6px; position: relative; margin-bottom: 8px; }
+    #home { font-size: 19px; padding-right: 4px; }
+    #searchBtn { min-width: 0; flex: 1; padding: 7px 10px; }
+    #searchBtn span { display: none; }
+    #menuBtn { display: inline-flex; flex: none; padding: 6px 12px; font-size: 18px; border: 1.5px solid var(--line); border-radius: 4px; }
+    #menuBtn.on { border-color: var(--sign); color: var(--sign); }
+    #tools { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; flex-direction: column; align-items: stretch; gap: 6px;
+      background: var(--panel); border: 1.5px solid var(--line); border-radius: 6px; padding: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.45); min-width: 200px; }
+    #tools.open { display: flex; }
+    #tools .chip { justify-content: space-between; margin: 0; }
+    #darkToggle { margin-left: 0; }
+    #chipsRow { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-bottom: 8px; }
+    #chipsRow::-webkit-scrollbar { display: none; }
+    #chipsRow .chip { flex: none; padding: 5px 10px; font-size: 14px; }
+    #mapwrap { height: min(46vh, 58vw); min-height: 200px; margin-bottom: 10px; }
+    #recenter { right: 8px; bottom: 8px; padding: 4px 8px; font-size: 13px; }
+    #panel, #board { overflow: visible; }
+    #panel { padding: 16px 14px 22px; }
+    #board { padding: 16px 14px 24px; }
+    #board .grid { columns: 1; }
+    #pbox { top: 8px; width: calc(100vw - 16px); }
+    #pinput { font-size: 18px; padding: 12px 14px; }
+    #presults { max-height: 70vh; }
+    .pr { padding: 8px 12px; }
+    .pr img, .pr .ico { width: 56px; height: 38px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -238,10 +288,16 @@
   <header>
     <button id="home" title="Home (Esc)">Atlas</button>
     <button id="searchBtn" title="Search (type anywhere)">Search<span>just type</span></button>
-    <span id="chips" style="display:contents"></span>
+    <span id="chipsRow" style="display:contents"><span id="chips" style="display:contents"></span></span>
+    <button id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+    <div id="tools">
     <button id="darkToggle" class="chip"><b>Dark cards</b><span class="n" id="darkState"></span></button>
     <a id="dailyLink" class="chip" href="daily.html" title="Daily review (2 × 30 min)"><b>Review</b><span class="n">⏱</span></a>
     <a id="mixLink" class="chip" href="confusions.html" title="Countries you mix up, across trainers"><b>Mix-ups</b><span class="n">⇄</span></a>
+    <button id="weakToggle" class="chip" title="Colour the map by your accuracy in the trainers"><b>Weak spots</b><span class="n" id="weakState"></span></button>
+    <a id="cmpLink" class="chip" href="compare.html" title="Two countries side by side"><b>Compare</b><span class="n">⚖</span></a>
+    <a id="quizLink" class="chip" href="quiz.html" title="Recall the cards, spaced repetition"><b>Quiz</b><span class="n">⟳</span></a>
+    </div>
   </header>
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="World map"></svg>
@@ -288,6 +344,7 @@
   const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const $ = id => document.getElementById(id);
   const SVGNS = 'http://www.w3.org/2000/svg';
+  const TOUCH = matchMedia('(pointer: coarse)').matches;
 
   // ---------- Préférences locales ----------
   const store = {
@@ -348,9 +405,78 @@
       }
     }
     $('darkState').textContent = dark ? 'on' : 'off';
+    $('weakState').textContent = weak ? 'on' : 'off';
+    $('weakToggle').classList.toggle('on', weak);
     $('darkToggle').classList.toggle('on', dark);
   }
   $('darkToggle').onclick = () => { dark = !dark; store.set('dark', dark); update(); };
+
+  // ---------- Weak spots : tgm.stats (byCountry de chaque trainer) + tgm.confusions ----------
+  let weak = store.get('weak', false);
+  const APP_NAME = { 'city-placer': 'City Placer', 'phone-codes': 'Phone codes', 'plate-trainer': 'Plates', 'bollards': 'Bollards',
+    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz' };
+  const WMIN = 3;                                   // answers needed before a country gets a colour
+  const wBucket = a => a < 0.5 ? 0 : a < 0.65 ? 1 : a < 0.8 ? 2 : a < 0.9 ? 3 : 4;
+  const WCOL = ['#d9614c', '#e8995a', '#e9cf6a', '#9fcb7a', '#5fae7e'];
+  const pct = a => Math.round(a * 100) + ' %';
+  let WD = null;
+  function weakData() {
+    if (WD) return WD;
+    const by = {};
+    const all = window.TGM && TGM.stats ? TGM.stats.all() : {};
+    for (const [app, s] of Object.entries(all)) {
+      for (const [iso, c] of Object.entries((s && s.byCountry) || {})) {
+        if (!c || !c.seen) continue;
+        const k = iso.toUpperCase(), w = by[k] = by[k] || { seen: 0, correct: 0, apps: {}, mix: 0 };
+        w.seen += c.seen; w.correct += c.correct || 0;
+        w.apps[app] = { seen: c.seen, correct: c.correct || 0, mastered: c.mastered || 0 };
+      }
+    }
+    const pairs = window.TGM && TGM.confusions ? TGM.confusions.pairs({ days: 60 }) : [];
+    for (const p of pairs) for (const k of [p.a, p.b]) { (by[k] = by[k] || { seen: 0, correct: 0, apps: {}, mix: 0 }).mix += p.n; }
+    for (const w of Object.values(by)) w.acc = w.seen ? w.correct / w.seen : null;
+    return (WD = by);
+  }
+  addEventListener('storage', e => { if (e.key && e.key.startsWith('tgm.')) { WD = null; if (weak) update(); } });
+  $('weakToggle').onclick = () => { weak = !weak; store.set('weak', weak); update(); };
+  // Liste des points faibles (accueil, mode Weak spots) : précision la plus basse d'abord, pays fréquents en tête à égalité
+  function weakEl() {
+    const d = weakData();
+    const s = document.createElement('section');
+    s.innerHTML = '<h2>Weak spots</h2>'
+      + `<div class="wlegend">${WCOL.map((c, i) => `<i style="background:${c}"></i>`).join('')}<span>&lt;50 % → 90 %+ accuracy, all trainers · grey: under ${WMIN} answers</span><i class="mx"></i><span>mixed up in the last 60 days</span></div>`;
+    const tier = k => (window.TGM && TGM.tier(k)) || 4;
+    const list = Object.entries(d).filter(([, w]) => w.seen >= 5)
+      .sort((a, b) => a[1].acc - b[1].acc || tier(a[0]) - tier(b[0])).slice(0, 12);
+    if (!list.length) {
+      s.appendChild(empty('No results yet on this browser: play a few rounds in the trainers (same site), they show up here.'));
+      return s;
+    }
+    const box = Object.assign(document.createElement('div'), { className: 'wlist' });
+    for (const [k, w] of list) {
+      const b = Object.assign(document.createElement('button'), { className: 'wrow' });
+      const by = Object.entries(w.apps).sort((x, y) => x[1].correct / x[1].seen - y[1].correct / y[1].seen)
+        .map(([a, c]) => `${APP_NAME[a] || a} ${pct(c.correct / c.seen)}`).join(' · ');
+      b.innerHTML = `<b>${window.TGM ? TGM.flag(k) : ''} ${nameOf(k)}</b><span class="acc">${pct(w.acc)} <small style="display:inline">/ ${w.seen}</small></span>`
+        + `<div class="wbar"><i style="width:${Math.max(3, w.acc * 100)}%;background:${WCOL[wBucket(w.acc)]}"></i></div><small>${by}${w.mix ? ` · ${w.mix} mix-up${w.mix > 1 ? 's' : ''}` : ''}</small>`;
+      b.onclick = () => selectCountry(k);
+      box.appendChild(b);
+    }
+    s.appendChild(box);
+    return s;
+  }
+  // Résultats du pays dans chaque trainer (fiche pays)
+  function resultsEl(iso) {
+    const w = weakData()[iso];
+    if (!w || !w.seen) return null;
+    const s = document.createElement('section');
+    s.innerHTML = `<h2>Your results<a class="more" href="compare.html#${iso.toLowerCase()}">compare →</a></h2>`
+      + Object.entries(w.apps).sort((a, b) => b[1].seen - a[1].seen).map(([a, c]) =>
+        `<div class="res-row">${APP_NAME[a] || a}<span>${c.seen} answer${c.seen > 1 ? 's' : ''}</span><b style="color:${WCOL[wBucket(c.correct / c.seen)]}">${pct(c.correct / c.seen)}</b></div>`).join('')
+      + (Object.keys(w.apps).length > 1 ? `<div class="res-row"><b>All</b><span>${w.seen}</span><b>${pct(w.acc)}</b></div>` : '');
+    s.classList.add('mix');
+    return s;
+  }
   $('home').onclick = () => reset();
 
   function reset() { Object.assign(state, { country: null, type: null, cluster: null, view: 'map' }); update(); }
@@ -490,6 +616,18 @@
   });
   palette.addEventListener('mousedown', e => { if (e.target === palette) closePalette(); });
   $('searchBtn').onclick = () => openPalette();
+  // Téléphone : menu ☰ (Dark cards, Review, Mix-ups, Weak spots, Compare) ; la bande des types sort de l'en-tête
+  const PHONE = matchMedia('(max-width: 700px)');
+  const placeChips = () => {
+    const row = $('chipsRow'), hdr = row.parentElement === document.querySelector('header');
+    if (PHONE.matches && hdr) { row.removeAttribute('style'); document.querySelector('header').after(row); }
+    else if (!PHONE.matches && !hdr) { row.style.display = 'contents'; $('searchBtn').after(row); }
+  };
+  placeChips(); PHONE.addEventListener('change', placeChips);
+  const setMenu = on => { $('tools').classList.toggle('open', on); $('menuBtn').classList.toggle('on', on); $('menuBtn').setAttribute('aria-expanded', on); };
+  $('menuBtn').onclick = e => { e.stopPropagation(); setMenu(!$('tools').classList.contains('open')); };
+  document.addEventListener('click', e => { if (!e.target.closest('#tools, #menuBtn')) setMenu(false); });
+  $('tools').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 
   // Un pays : toujours sa fiche pays (trainers, liens, fiches) ; la planche reste à un clic
   function openCountry(iso) {
@@ -526,13 +664,16 @@
     for (const iso in shapes) {
       // un type choisi : un pays couvert par un trainer de ce type (ex. phone-codes) compte comme couvert
       const n = countryCards(iso).length || (state.type && countryApps(iso, state.type).length ? 1 : 0);
+      const w = weak ? weakData()[iso] : null, wb = w && w.seen >= WMIN ? wBucket(w.acc) : -1;
       for (const el of shapes[iso]) {
-        el.classList.toggle('c1', n === 1);
-        el.classList.toggle('c2', n >= 2);
+        el.classList.toggle('c1', !weak && n === 1);
+        el.classList.toggle('c2', !weak && n >= 2);
+        for (let i = 0; i < 5; i++) el.classList.toggle('w' + i, wb === i);
+        el.classList.toggle('wmix', !!(w && w.mix));
         el.classList.toggle('sel', state.country === iso);
         el.classList.toggle('incluster', inCluster.has(iso));
       }
-      if (shapes[iso][1]) shapes[iso][1].style.display = n || state.country === iso || inCluster.has(iso) ? '' : 'none';
+      if (shapes[iso][1]) shapes[iso][1].style.display = n || wb >= 0 || state.country === iso || inCluster.has(iso) ? '' : 'none';
     }
   }
 
@@ -590,6 +731,7 @@
       if (Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('dragging'); }
       if (drag.moved) { const { s } = toSvg(e); vb = { ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }; setHover(null); tip.style.display = 'none'; previewVb(); return; }
     }
+    if (e.pointerType === 'touch') return;          // pas d'infobulle au doigt : le tap ouvre la fiche
     const iso = (e.target && e.target.dataset && e.target.dataset.iso) || null;
     setHover(iso);
     if (iso) {
@@ -599,7 +741,10 @@
       tip.style.display = 'block';
       tip.style.left = (e.clientX - r.left) + 'px';
       tip.style.top = (e.clientY - r.top) + 'px';
-      tip.innerHTML = `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' cards' : ' card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
+      const w = weak ? weakData()[iso] : null;
+      tip.innerHTML = weak
+        ? `${nameOf(iso)}<span>${w && w.seen ? `${pct(w.acc)} over ${w.seen} answer${w.seen > 1 ? 's' : ''}` : 'not played yet'}${w && w.mix ? ` · ${w.mix} mix-up${w.mix > 1 ? 's' : ''}` : ''}</span>`
+        : `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' cards' : ' card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
     } else tip.style.display = 'none';
   });
   svg.addEventListener('pointerup', e => {
@@ -607,7 +752,10 @@
     drag = null; svg.classList.remove('dragging');
     if (moved) { applyVb(); return; }
     const iso = isoAt(e);
-    if (iso) openCountry(iso);
+    if (iso) {
+      openCountry(iso);
+      if (PHONE.matches) requestAnimationFrame(() => $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
     else { state.country = null; update(); }
   });
   svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; setHover(null); });
@@ -710,7 +858,7 @@
     if (state.country) {
       const iso = state.country;
       add(countryTrainersEl(iso, state.type));
-      if (!state.type) add(mixEl(iso));
+      if (!state.type) { add(mixEl(iso)); add(resultsEl(iso)); }
       const list = countryCards(iso);
       if (!list.length) return add(empty(state.type
         ? `No “${typeLabel[state.type]}” card for this country.`
@@ -751,6 +899,8 @@
     const t = selectionTitle();
     if (t) {
       panel.appendChild(header(t[0], t[1], [
+        ...(state.country ? [['Compare', () => { location.href = 'compare.html#' + state.country.toLowerCase(); }]] : []),
+        ...(state.country && countAll(state.country) ? [['Quiz', () => { location.href = 'quiz.html#' + state.country.toLowerCase(); }]] : []),
         ['Board', () => { state.view = 'board'; update(); }],
         closeBtn(() => { state.country = state.cluster = null; if (!state.country) state.type = null; update(); }),
       ]));
@@ -763,8 +913,11 @@
     st.innerHTML = `<div>${cards.length}<small>cards</small></div><div>${nCountries}<small>countries covered</small></div>`;
     panel.appendChild(st);
     const hint = Object.assign(document.createElement('p'), { className: 'hint' });
-    hint.innerHTML = 'Just type, any time: “phone br”, “plate pl”, “car paraguay”. <kbd>Enter</kbd> opens the card. Clicking a country opens its page: trainers, links, cards.';
+    hint.innerHTML = TOUCH
+      ? 'Search a country or a card: “phone br”, “plate pl”, “car paraguay”. Tap a country on the map for its page: trainers, links, cards.'
+      : 'Just type, any time: “phone br”, “plate pl”, “car paraguay”. <kbd>Enter</kbd> opens the card. Clicking a country opens its page: trainers, links, cards.';
     panel.appendChild(hint);
+    if (weak) panel.appendChild(weakEl());
     const tr = trainersEl();
     tr && panel.appendChild(tr);
     const gp = gapsEl();
@@ -851,7 +1004,9 @@
         if (href) Object.assign(l, { href, target: '_blank', rel: 'noopener', title: `Explore ${nameOf(iso)} in ${info.name}` });
         via.appendChild(l);
       });
-      row.appendChild(via);
+      const cmp = Object.assign(document.createElement('a'), { className: 'mix-cmp', href: `compare.html#${iso.toLowerCase()}/${other.toLowerCase()}`,
+        title: `${nameOf(iso)} and ${nameOf(other)} side by side`, textContent: '⚖' });
+      row.appendChild(via); row.appendChild(cmp);
       s.appendChild(row);
     }
     return s;
@@ -1092,6 +1247,7 @@
   window.addEventListener('hashchange', () => { const iso = isoFromHash(); if (iso && iso !== state.country) openCountry(iso); });
 
   function update() {
+    WD = null;
     $('app').classList.toggle('board-mode', state.view === 'board' && !!selectionTitle());
     renderChips(); paintMap(); renderPanel(); renderBoard();
     syncHash();

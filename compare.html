@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare · GeoGuessr Atlas</title>
+<style>
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --glass: #7cc7b4; --pink: #ff5fa2;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
+  body { padding: 18px 16px 60px; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  a { color: var(--glass); }
+  button, select { font: inherit; color: inherit; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  header h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
+  header .right { margin-left: auto; display: flex; gap: 12px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pick { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .pick select { width: 100%; background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 16px; }
+  .pick button { background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+  .pick button:hover { border-color: var(--glass); }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  section h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .two > div { min-width: 0; }
+  .who .nm { font-size: 24px; font-weight: 600; }
+  .who .meta { color: var(--muted); font-size: 13px; margin: 2px 0 8px; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 14px; }
+  .links a { text-decoration: none; }
+  .links a:hover { color: var(--sign); }
+  .between { font-size: 15px; }
+  .between b { color: var(--pink); }
+  .res { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 14px; }
+  .res span { color: var(--muted); font-size: 12px; }
+  .res b { font-variant-numeric: tabular-nums; text-align: right; }
+  .none { color: var(--muted); font-size: 13px; font-style: italic; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  figure { margin: 0; background: #0a1824; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; cursor: zoom-in; }
+  figure img { width: 100%; height: 120px; object-fit: contain; display: block; background: #fff; }
+  figure figcaption { padding: 4px 6px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+  figure .both { color: var(--sign); }
+  img.inv { filter: invert(.9) hue-rotate(180deg); background: #0d0d0d; }
+  img.dim { filter: brightness(.86); }
+  .shared { margin-top: 10px; }
+  .shared .muted { margin-bottom: 6px; }
+  .apps { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+  .apps a { text-decoration: none; }
+  #lb { position: fixed; inset: 0; background: #000d; display: none; z-index: 10; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
+  #lb.open { display: flex; }
+  #lb img { max-width: 100%; max-height: 100%; }
+  @media (max-width: 640px) {
+    .pick { grid-template-columns: 1fr auto 1fr; gap: 6px; }
+    .pick select { font-size: 14px; padding: 6px; }
+    .two { gap: 8px; }
+    .who .nm { font-size: 19px; }
+    .thumbs { grid-template-columns: 1fr; }
+    figure img { height: 100px; }
+    section { padding: 10px; }
+  }
+</style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Compare</h1>
+    <span class="muted">two countries side by side: cards, your results, how often you mix them up</span>
+    <span class="right"><a href="confusions.html">Mix-ups ↗</a><a href="daily.html">Review ↗</a><a href="./">Atlas ↗</a></span>
+  </header>
+  <div class="pick">
+    <select id="selA" aria-label="First country"></select>
+    <button id="swap" title="Swap">⇄</button>
+    <select id="selB" aria-label="Second country"></select>
+  </div>
+  <div id="out"></div>
+</div>
+<div id="lb"><img alt=""></div>
+
+<script src="tgm-core.js"></script>
+<script src="data.js"></script>
+<script src="learnable.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const T = window.TGM, A = window.ATLAS || { types: [], cards: [], apps: [], clusters: {} };
+  if (!T) { $('out').textContent = 'tgm-core.js missing: run build.cmd.'; return; }
+  const nameOf = iso => T.name(iso, 'en') || iso;
+  const CONT = { EU: 'Europe', AS: 'Asia', AF: 'Africa', NA: 'North America', SA: 'South America', OC: 'Oceania' };
+  const APP_NAME = { 'city-placer': 'City Placer', 'phone-codes': 'Phone codes', 'plate-trainer': 'Plates', 'bollards': 'Bollards',
+    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz' };
+  let dark = true; try { const v = localStorage.getItem('atlas.dark'); if (v !== null) dark = JSON.parse(v); } catch (e) {}
+  let invOv = {}; try { invOv = JSON.parse(localStorage.getItem('atlas.inv') || '{}'); } catch (e) {}
+  const imgCls = c => dark && (c.id in invOv ? invOv[c.id] : c.invert) ? 'inv' : (dark && c.light ? 'dim' : '');
+  const enc = p => p.split('/').map(encodeURIComponent).join('/');
+
+  const cardsOf = iso => A.cards.filter(c => c.countries.includes(iso));
+  const isos = T.isos().sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  const opt = k => `<option value="${k}">${T.flag(k)} ${esc(nameOf(k))}${cardsOf(k).length ? ` (${cardsOf(k).length})` : ''}</option>`;
+  $('selA').innerHTML = $('selB').innerHTML = isos.map(opt).join('');
+
+  // Second country by default: the one most mixed up with the first, else a neighbour on the same continent with cards
+  function partner(a) {
+    const p = T.confusions ? T.confusions.pairs({ iso: a })[0] : null;
+    if (p) return p.a === a ? p.b : p.a;
+    const cont = T.continent(a);
+    return isos.filter(k => k !== a && T.continent(k) === cont).sort((x, y) => cardsOf(y).length - cardsOf(x).length)[0] || isos.find(k => k !== a);
+  }
+  function fromHash() {
+    const [a, b] = decodeURIComponent(location.hash.slice(1)).toUpperCase().split('/');
+    const ok = k => k && T.has(k);
+    if (!ok(a)) return null;
+    return [a, ok(b) && b !== a ? b : partner(a)];
+  }
+  let cur = fromHash() || ['PL', 'CZ'];
+
+  const appLink = (a, iso) => a.deeplink ? a.deeplink.replace('{iso}', iso.toLowerCase()) : a.url;
+  const trainers = iso => A.apps.filter(a => a.countries.includes(iso) && (a.deeplink || a.scope === 'country'));
+
+  function results(iso) {
+    const rows = [];
+    let seen = 0, ok = 0;
+    for (const [app, s] of Object.entries(T.stats.all())) {
+      const c = s && s.byCountry && (s.byCountry[iso] || s.byCountry[iso.toLowerCase()]);
+      if (!c || !c.seen) continue;
+      seen += c.seen; ok += c.correct || 0;
+      rows.push(`<div>${esc(APP_NAME[app] || app)} <span>${c.seen}</span></div><b>${Math.round((c.correct || 0) / c.seen * 100)} %</b>`);
+    }
+    if (!rows.length) return '<div class="none">Not played yet on this browser.</div>';
+    if (rows.length > 1) rows.push(`<div><b>All</b> <span>${seen}</span></div><b>${Math.round(ok / seen * 100)} %</b>`);
+    return `<div class="res">${rows.join('')}</div>`;
+  }
+  const fig = (c, both) => `<figure data-full="${esc(enc(c.file))}" title="${esc(c.id)}"><img loading="lazy" class="${imgCls(c)}" src="${esc(enc(c.thumb))}" alt="">`
+    + `<figcaption>${both ? '<span class="both">both · </span>' : ''}${esc(c.title || c.id.split('/').pop())}</figcaption></figure>`;
+
+  function render() {
+    const [a, b] = cur;
+    $('selA').value = a; $('selB').value = b;
+    const want = '#' + a.toLowerCase() + '/' + b.toLowerCase();
+    if (location.hash.toLowerCase() !== want) history.replaceState(null, '', want);
+    document.title = `${nameOf(a)} vs ${nameOf(b)} · Compare`;
+
+    const who = iso => {
+      const sv = (window.SV_CENTER || {})[iso], tier = T.tier(iso);
+      const links = [`<a href="./#${iso.toLowerCase()}">Atlas page ↗</a>`];
+      if (T.plonkitUrl(iso)) links.push(`<a href="${esc(T.plonkitUrl(iso))}" target="_blank" rel="noopener">Plonk It ↗</a>`);
+      if (sv) links.push(`<a href="https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e5" target="_blank" rel="noopener">Street View ↗</a>`);
+      return `<div class="who"><div class="nm">${T.flag(iso)} ${esc(nameOf(iso))}</div>`
+        + `<div class="meta">${esc(CONT[T.continent(iso)] || '')}${tier ? ' · tier ' + tier + ' (' + esc(T.tierNames[tier].en.toLowerCase()) + ')' : ''} · ${cardsOf(iso).length} card${cardsOf(iso).length === 1 ? '' : 's'}</div>`
+        + `<div class="links">${links.join('')}</div></div>`;
+    };
+    let html = `<section class="two">${who(a)}${who(b)}</section>`;
+
+    const p = T.confusions ? T.confusions.pairs({ iso: a }).find(x => (x.a === b || x.b === b)) : null;
+    html += `<section><h2>Between them</h2><div class="between">${p
+      ? `Mixed up <b>${p.n}×</b> (${Object.entries(p.byApp).map(([k, n]) => `${esc(APP_NAME[k] || k)} ${n}`).join(', ')}) · <a href="confusions.html#${a.toLowerCase()}">all mix-ups of ${esc(nameOf(a))} →</a>`
+      : `Never mixed up on this browser.`}</div></section>`;
+
+    html += `<section><h2>Your results</h2><div class="two"><div>${results(a)}</div><div>${results(b)}</div></div></section>`;
+
+    // cards, type by type; a card covering both countries is shown once, under the two columns
+    const ca = cardsOf(a), cb = cardsOf(b), shared = ca.filter(c => cb.includes(c));
+    for (const t of A.types) {
+      const la = ca.filter(c => c.types.includes(t.key) && !shared.includes(c)), lb = cb.filter(c => c.types.includes(t.key) && !shared.includes(c));
+      const ls = shared.filter(c => c.types.includes(t.key));
+      if (!la.length && !lb.length && !ls.length) continue;
+      const col = l => l.length ? `<div class="thumbs">${l.map(c => fig(c)).join('')}</div>` : '<div class="none">no card</div>';
+      html += `<section><h2>${esc(t.label)}</h2><div class="two"><div>${col(la)}</div><div>${col(lb)}</div></div>`
+        + (ls.length ? `<div class="shared"><div class="muted">Covers both</div><div class="thumbs">${ls.map(c => fig(c, true)).join('')}</div></div>` : '')
+        + `</section>`;
+    }
+    if (!ca.length && !cb.length) html += '<section><div class="none">No Atlas card for either country yet.</div></section>';
+
+    const tr = iso => {
+      const l = trainers(iso);
+      return l.length ? `<div class="apps">${l.map(x => `<a href="${esc(appLink(x, iso))}" target="_blank" rel="noopener">${esc(x.name.en)} ↗</a>`).join('')}</div>` : '<div class="none">no trainer</div>';
+    };
+    html += `<section><h2>Explore in the trainers</h2><div class="two"><div>${tr(a)}</div><div>${tr(b)}</div></div></section>`;
+    $('out').innerHTML = html;
+  }
+
+  $('selA').onchange = e => { const a = e.target.value; cur = a === cur[1] ? [a, cur[0]] : [a, cur[1]]; render(); };
+  $('selB').onchange = e => { const b = e.target.value; cur = b === cur[0] ? [cur[1], b] : [cur[0], b]; render(); };
+  $('swap').onclick = () => { cur = [cur[1], cur[0]]; render(); };
+  addEventListener('hashchange', () => { const h = fromHash(); if (h && (h[0] !== cur[0] || h[1] !== cur[1])) { cur = h; render(); } });
+  $('out').addEventListener('click', e => {
+    const f = e.target.closest('figure'); if (!f) return;
+    const im = $('lb').querySelector('img'); im.src = f.dataset.full; im.className = f.querySelector('img').className; $('lb').classList.add('open');
+  });
+  $('lb').onclick = () => $('lb').classList.remove('open');
+  addEventListener('keydown', e => { if (e.key === 'Escape') $('lb').classList.remove('open'); });
+  render();
+})();
+</script>
+</body>
+</html>
