@@ -126,6 +126,18 @@
   .members button { padding: 3px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .members button:hover { border-color: var(--ink); }
   .members button.none { opacity: .5; }
+  /* À compléter : couverture fiches + trainers par type et par tier */
+  table.gaps { width: 100%; border-collapse: collapse; font-size: 13px; margin: 2px 0 10px; }
+  table.gaps th { font-weight: 600; color: var(--muted); text-align: left; padding: 4px 4px; }
+  table.gaps th small { font-weight: 400; }
+  table.gaps td { padding: 2px 4px; }
+  table.gaps td:first-child { color: var(--ink); white-space: nowrap; }
+  table.gaps button { width: 100%; padding: 3px 6px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  table.gaps button:hover, table.gaps button.on { border-color: var(--ink); }
+  table.gaps button.full { color: var(--sea-glass); }
+  table.gaps button.low { color: var(--sign); }
+  .gaps-list { margin-bottom: 12px; }
+  .gaps-list p { margin: 0 0 6px; color: var(--muted); font-size: 13px; }
   /* --- Trainers (accueil) --- */
   .apps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
   .app { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
@@ -246,6 +258,7 @@
   </div>
 </div>
 
+<script src="tgm-core.js"></script>
 <script src="map.js"></script>
 <script src="data.js"></script>
 <script src="learnable.js"></script>
@@ -276,12 +289,8 @@
   const matchType = c => !state.type || c.types.includes(state.type);
   // Trainers qui couvrent un pays : deeplink ({iso}) pour un trainer monde, sinon trainer de ce pays
   // Plonk It : lien vers la page publique du pays (lien seulement, aucun contenu repris).
-  // Slug = nom anglais en minuscules avec tirets ; PLONKIT_SLUG corrige les exceptions.
-  const PLONKIT = 'AD AE AL AR AT AU BD BE BG BM BO BR BT BW BY CA CH CL CN CO CR CW CZ DE DK DO EC EE EG ES FI FK FO FR GB GH GI GL GR GS GT HK HR HU ID IE IL IM IN IO IQ IS IT JE JO JP KE KG KH KR KZ LA LB LI LK LS LT LU LV MC ME MG MK ML MN MO MQ MT MX MY NA NG NL NO NP NZ OM PA PE PH PK PL PM PR PT QA RE RO RS RU RW SE SG SI SJ SK SM SN ST SZ TH TN TR TW TZ UA UG UM US UY VI VN ZA'.split(' ');
-  const PLONKIT_SLUG = { GB: 'united-kingdom', IL: 'israel', CN: 'china', ST: 'sao-tome-and-principe', GS: 'south-georgia',
-    UM: 'us-minor-outlying-islands', VI: 'us-virgin-islands', PM: 'saint-pierre-and-miquelon', SJ: 'svalbard', MO: 'macau' };
-  const plonkitLink = iso => PLONKIT.includes(iso) ? 'https://www.plonkit.net/' + (PLONKIT_SLUG[iso] ||
-    nameOf(iso).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')) : null;
+  // Slug et liste des pays : countries.json, via tgm-core.js (cœur commun avec les trainers).
+  const plonkitLink = iso => window.TGM ? TGM.plonkitUrl(iso) : null;
   const appLink = (a, iso) => a.deeplink ? a.deeplink.replace('{iso}', iso.toLowerCase()) : a.url;
   const countryApps = (iso, type) => apps.filter(a => a.countries.includes(iso) && (a.deeplink || a.scope === 'country')
     && (!type || a.types.includes(type)));
@@ -741,6 +750,8 @@
     panel.appendChild(hint);
     const tr = trainersEl();
     tr && panel.appendChild(tr);
+    const gp = gapsEl();
+    gp && panel.appendChild(gp);
     if (state.dailyCard && cards.length) {
       const day = Math.floor(Date.now() / 86400000);
       const s = section('Fiche du jour', [cards[day % cards.length]]);
@@ -799,6 +810,58 @@
       box.appendChild(d);
     }
     return box;
+  }
+
+  // À compléter : pour chaque type, les pays courants (tiers 1 à 3, countries.json) couverts par une fiche ou un trainer.
+  // Un clic sur une case liste les pays manquants ; un clic sur un pays ouvre sa fiche.
+  let gapSel = null;
+  function gapsEl() {
+    if (!window.TGM) return null;
+    const TIERS = [1, 2, 3];
+    const byTier = Object.fromEntries(TIERS.map(t => [t, TGM.isos().filter(k => TGM.tier(k) === t)]));
+    const covered = (iso, type) => cards.some(c => c.types.includes(type) && c.countries.includes(iso))
+      || apps.some(a => a.types.includes(type) && a.countries.includes(iso));
+    const rows = types.filter(t => t.key !== 'other');
+    const s = document.createElement('section');
+    const d = Object.assign(document.createElement('details'), { className: 'sub', open: !!gapSel });
+    d.innerHTML = '<summary>À compléter<small>pays sans fiche ni trainer, par type</small></summary>';
+    const tb = Object.assign(document.createElement('table'), { className: 'gaps' });
+    tb.innerHTML = '<tr><th></th>' + TIERS.map(t => `<th>Tier ${t}<br><small>${TGM.tierNames[t].fr.toLowerCase()}</small></th>`).join('') + '</tr>';
+    const list = Object.assign(document.createElement('div'), { className: 'gaps-list' });
+    const showList = () => {
+      list.innerHTML = '';
+      if (!gapSel) return;
+      const [type, t] = gapSel, miss = byTier[t].filter(k => !covered(k, type)).sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+      list.innerHTML = `<p>${typeLabel[type]} · tier ${t} : ${miss.length ? miss.length + ' pays sans rien' : 'tout est couvert'}</p>`;
+      const m = Object.assign(document.createElement('div'), { className: 'members' });
+      miss.forEach(iso => {
+        const b = Object.assign(document.createElement('button'), { textContent: nameOf(iso), title: TGM.name(iso) });
+        b.onclick = () => selectCountry(iso);
+        m.appendChild(b);
+      });
+      list.appendChild(m);
+    };
+    for (const ty of rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${ty.label}</td>`;
+      for (const t of TIERS) {
+        const n = byTier[t].length, k = byTier[t].filter(iso => covered(iso, ty.key)).length;
+        const td = document.createElement('td');
+        const b = Object.assign(document.createElement('button'), { textContent: `${k}/${n}`,
+          className: (k === n ? 'full' : k < n / 3 ? 'low' : '') + (gapSel && gapSel[0] === ty.key && gapSel[1] === t ? ' on' : '') });
+        b.onclick = () => {
+          gapSel = gapSel && gapSel[0] === ty.key && gapSel[1] === t ? null : [ty.key, t];
+          tb.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+          gapSel && b.classList.add('on');
+          showList();
+        };
+        td.appendChild(b); tr.appendChild(td);
+      }
+      tb.appendChild(tr);
+    }
+    d.appendChild(tb); d.appendChild(list); showList();
+    s.appendChild(d);
+    return s;
   }
 
   // Trainers (apps.json, injecté par build.py) : liens vers les outils, ouverts dans un nouvel onglet

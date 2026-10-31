@@ -121,6 +121,11 @@ for a in apps:
         warnings.append(f"{where} : pays hors liste de l'Atlas (ignorés sur la carte) {bad_c}")
 shown_apps = [a for a in apps if a.get("status") in APP_SHOWN]
 
+# Cœur commun : countries.json -> tgm-core.js (Atlas + copies des trainers qui l'utilisent)
+sys.path.insert(0, str(ROOT / "tools"))
+import tgm_core  # noqa: E402
+tgm_core.build(apps, problems, warnings)
+
 
 def analyse(src, dst):
     """Crée la miniature WebP et mesure la part de fond clair."""
