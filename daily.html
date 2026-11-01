@@ -27,7 +27,7 @@
   header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
   header h1 { margin: 0; font-size: 26px; letter-spacing: .5px; }
   header .date { color: var(--muted); }
-  header .right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  header .right { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .streak { color: var(--sign); font-weight: 600; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
   .card h2 { margin: 0 0 10px; font-size: 17px; display: flex; gap: 10px; align-items: baseline; }
@@ -88,7 +88,7 @@
   <header>
     <h1>Daily review</h1>
     <span class="date" id="date"></span>
-    <span class="right"><span class="streak" id="streak"></span><a href="./">Atlas ↗</a></span>
+    <span class="right"><span class="streak" id="streak"></span><a href="./">Atlas</a><a href="games.html">Duels</a><a href="confusions.html">Mix-ups</a><a href="compare.html">Compare</a><a href="quiz.html">Quiz</a></span>
   </header>
 
   <section class="card" id="timer">

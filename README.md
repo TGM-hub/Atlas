@@ -48,6 +48,21 @@ Pour forcer un titre : `titles.json`, par exemple
 l'accueil affiche ceux en `live` et `wip` (badge « en cours »), un clic ouvre un nouvel onglet.
 Statuts : `live`, `wip`, `local` (pas encore en ligne, masqué), `idea` (masqué).
 
+## Pages
+Toutes reliées par la ligne de liens en haut à droite (Atlas · Review · Duels · Mix-ups · Compare · Quiz).
+- `index.html` : carte, fiches, recherche ; boutons Weak spots (carte colorée par ta précision, tous trainers et duels), Compare, Quiz, Duels ; menu ☰ sur téléphone. Fiche pays : trainers en mode exploration, « Mixed up with », « Your results ».
+- `daily.html` : révision du jour (2 × 30 min) ; la page Plonk It du jour vient d'abord de tes duels ; sauvegarde des progrès sur GitHub (repo privé).
+- `games.html` : review de tes Duels et Team Duels (données de `geo-review`, liées une fois avec « Link review.json », restées dans le navigateur) : par pays, régions les plus dures, parties manche par manche, carte, coéquipiers.
+- `confusions.html` : pays confondus, tous trainers et duels.
+- `compare.html#pl/cz` : deux pays côte à côte.
+- `quiz.html` : révision espacée des fiches.
+
+## Données partagées (navigateur, même site que les trainers)
+`tgm.stats.<app>` (résumé de chaque trainer), `tgm.confusions` (pays confondus), `tgm.duels.summary` (duels par pays, pour la révision) ; préférences `atlas.*`. La révision sauvegarde ces clés sur GitHub ; les parties (`duels.review`) n'en sortent pas.
+
+## Outils
+`build.cmd` (fiches, `data.js`, `tgm-core.js` recopié dans les trainers), `publish-all.cmd` (tests de fumée `tools\smoke.py` puis publication repo par repo), `check-links.cmd`, `tools\pwa.py` (hors ligne + installation).
+
 ## Recherche
 Tape au clavier n'importe quand. Pays en anglais, en français ou code ISO ; types en anglais ou en français
 (« car paraguay », « voiture paraguay », « phone br », « plaque pologne »). Entrée ouvre la fiche.

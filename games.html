@@ -98,7 +98,7 @@
     <h1>Duels review</h1>
     <span class="muted" id="sub">your Duels and Team Duels, place by place · data stays in this browser</span>
     <span class="right"><button id="link" hidden title="Pick geo-review\review.json once: the page then reloads it by itself">Link review.json</button><button id="reload" hidden>Reload review.json</button><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
-      <a href="confusions.html">Mix-ups ↗</a><a href="./">Atlas ↗</a></span>
+      <a href="./">Atlas</a><a href="daily.html">Review</a><a href="confusions.html">Mix-ups</a><a href="compare.html">Compare</a><a href="quiz.html">Quiz</a></span>
   </header>
   <div id="out"></div>
 </div>
@@ -118,14 +118,35 @@
   const col = p => p == null ? 'var(--line)' : p < 30 ? 'var(--ko)' : p < 60 ? 'var(--mid)' : 'var(--ok)';
   const pctCell = (a, b) => { const p = pct(a, b); return p == null ? '<td class="muted">–</td>' : `<td class="pct">${p} %<span class="bar"><i style="width:${p}%;background:${col(p)}"></i></span></td>`; };
 
-  let D = null;
-  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost', mate: '', lines: false }, lsGet(PKEY, {}));
+  let D = null, RAW = null;      // RAW: review.json as made by geo-review; D: the same seen by the player chosen in "I am"
+  const SHARED = 'https://tgm-hub.github.io/geo-review-data/review.json';   // public copy pushed by geo-review\review.cmd
+  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost', mate: '', lines: false, view: '' }, lsGet(PKEY, {}));
   const saveP = () => { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} };
 
   function load() {
-    try { const t = localStorage.getItem(KEY); D = t ? JSON.parse(t) : null; } catch (e) { D = null; }
-    if (D && D.v !== 1) D = null;
+    try { const t = localStorage.getItem(KEY); RAW = t ? JSON.parse(t) : null; } catch (e) { RAW = null; }
+    if (RAW && RAW.v !== 1) RAW = null;
+    D = RAW && viewAs(RAW, prefs.view);
   }
+  // "I am" a teammate: only the games played with TGM, the teammate's guesses become "mine" and TGM becomes the mate
+  // (TGM's rating is hidden: it is his own). Used by the teammate on his own browser, so his Atlas stats are his.
+  function viewAs(d, id) {
+    const gc = d.gameCols, rc = d.roundCols, M = gc.indexOf('mate');
+    if (!id || id === d.me || !d.games.some(g => g[M] === id)) return d;
+    const RB = gc.indexOf('ratingBefore'), RA = gc.indexOf('ratingAfter'), G0 = rc.indexOf('game'), ME = rc.indexOf('me'), MT = rc.indexOf('mate');
+    const map = new Map(), games = [];
+    d.games.forEach((g, i) => { if (g[M] === id) { const c = g.slice(); c[M] = d.me; c[RB] = c[RA] = null; map.set(i, games.length); games.push(c); } });
+    const rounds = d.rounds.filter(r => map.has(r[G0])).map(r => { const c = r.slice(); c[G0] = map.get(r[G0]); c[ME] = r[MT]; c[MT] = r[ME]; return c; });
+    return Object.assign({}, d, { me: id, games, rounds, users: Object.assign({ [d.me]: 'TGM' }, d.users) });
+  }
+  const iamFilter = () => {
+    const n = {}, M = RAW.gameCols.indexOf('mate'), us = RAW.users || {};
+    RAW.games.forEach(g => { if (g[M]) n[g[M]] = (n[g[M]] || 0) + 1; });
+    const ms = Object.entries(n).filter(([, k]) => k >= 10).sort((a, b) => b[1] - a[1]);
+    if (!ms.length) return '';
+    return filt('<span title="Whose guesses count on this browser, Atlas Weak spots and Mix-ups included. Teammate: only the games played together.">I am</span>', 'view',
+      [['', esc(us[RAW.me] || 'TGM')], ...ms.map(([id]) => [id, esc(us[id] || 'mate ' + id.slice(-4))])]);
+  };
   // rounds as objects, with the guess taken into account (mine, or the team's best)
   function rows() {
     if (!D) return [];
@@ -304,12 +325,13 @@
   function render() {
     if (!D) {
       $('out').innerHTML = `<section class="empty"><p>No games imported on this browser yet.</p>
-        <p>On your PC, in <code>geo-review</code>: <code>fetch.cmd</code> (gets your new games and places them), then <code>review.cmd</code>
-        (writes <code>review.json</code> and opens this page). Then <b>Link review.json</b> above (once: afterwards the page re-reads it by itself), or <b>Import</b> it.</p>
-        <p class="muted">The file stays in this browser (it is never sent anywhere); only per-country totals feed the Atlas Weak spots and Mix-ups.</p></section>`;
+        <p>The page loads the shared <code>review.json</code> from GitHub by itself (<code>TGM-hub/geo-review-data</code>): if nothing shows, it is not online yet.</p>
+        <p>On TGM's PC, in <code>geo-review</code>: <code>fetch.cmd</code> (gets the new games and places them), then <code>review.cmd</code>
+        (writes <code>review.json</code>, pushes it to GitHub after a yes, opens this page). <b>Link review.json</b> or <b>Import</b> still work offline.</p>
+        <p class="muted">Only per-country totals feed the Atlas Weak spots and Mix-ups of this browser.</p></section>`;
       return;
     }
-    $('sub').textContent = `${D.games.length} games, ${D.rounds.length} rounds · imported ${new Date(D.made).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · stays in this browser`;
+    $('sub').textContent = `${D.games.length} games, ${D.rounds.length} rounds · data of ${new Date(D.made).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}${D !== RAW ? ' · seen as ' + nick(D.me) + ', games with TGM only' : ''}`;
     const h = decodeURIComponent(location.hash.slice(1));
     const iso = h.toUpperCase();
     const tab = /^g\//.test(h) || h === 'games' ? 'games' : h === 'regions' ? 'regions' : 'countries';
@@ -319,14 +341,16 @@
       + filt('', 'rated', [['', 'All'], ['1', 'Ranked'], ['0', 'Unranked']])
       + filt('', 'move', [['', 'All'], ['Move', 'Move'], ['NM', 'NM'], ['NMPZ', 'NMPZ']])
       + filt('Period', 'days', [[0, 'All'], [30, '30 d'], [7, '7 d']])
-      + filt('Guess', 'who', [['me', 'Mine'], ['team', "Team's best"]]) + mateFilter() + `</section>`;
+      + iamFilter() + filt('Guess', 'who', [['me', 'Mine'], ['team', "Team's best"]]) + mateFilter() + `</section>`;
     const tabs = `<nav class="tabs"><a href="#" class="${tab === 'countries' ? 'on' : ''}">Countries</a><a href="#regions" class="${tab === 'regions' ? 'on' : ''}">Hardest regions</a><a href="#games" class="${tab === 'games' ? 'on' : ''}">Games</a></nav>`;
     html = tabs + html;
     html += /^g\//.test(h) ? gameView(h.slice(2)) : h === 'games' ? gamesList(list) : h === 'regions' ? hardest(list)
       : /^[A-Z]{2}$/.test(iso) ? countryView(iso, list) : overview(list);
     $('out').innerHTML = html;
     $('out').querySelectorAll('.grp button').forEach(b => b.onclick = () => {
-      const k = b.parentElement.dataset.k; prefs[k] = k === 'days' ? +b.dataset.v : b.dataset.v; saveP(); render();
+      const k = b.parentElement.dataset.k; prefs[k] = k === 'days' ? +b.dataset.v : b.dataset.v;
+      if (k === 'view') { prefs.mate = ''; saveP(); load(); pushAtlas(); render(); return; }
+      saveP(); render();
     });
     $('out').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { location.hash = tr.dataset.iso.toLowerCase(); });
     $('out').querySelectorAll('tr.grow').forEach(tr => tr.onclick = () => { location.hash = 'g/' + tr.dataset.g; });
@@ -501,7 +525,7 @@
   async function importText(text, quiet) {
     const d = JSON.parse(text);
     if (d.v !== 1 || !Array.isArray(d.rounds)) throw new Error('not a review.json from geo-review');
-    if (quiet && D && D.made === d.made) return false;            // already the latest
+    if (quiet && RAW && RAW.made >= d.made) return false;         // same or older than what this browser has
     localStorage.setItem(KEY, JSON.stringify(d));
     load(); pushAtlas(); render();
     return true;
@@ -539,6 +563,9 @@
     $('reload').onclick = async () => { const h = await getHandle(); if (h) readLinked(h, true).catch(err => alert(err.message)); };
     getHandle().then(h => { if (h) { $('link').textContent = 'Linked ✓'; $('link').title = 'Linked to ' + h.name + ': click to pick another file'; return readLinked(h, false); } }).catch(() => {});
   }
+  // Shared copy on GitHub (TGM-hub/geo-review-data, Pages): read at each visit, kept only if newer (works on the phone too)
+  fetch(SHARED + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : null)
+    .then(t => t ? importText(t, true) : false).then(ch => { if (ch) $('sub').textContent += ' · updated from GitHub'; }).catch(() => {});
   addEventListener('hashchange', render);
   load(); render();
 })();
