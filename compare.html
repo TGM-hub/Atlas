@@ -97,7 +97,7 @@
   const nameOf = iso => T.name(iso, 'en') || iso;
   const CONT = { EU: 'Europe', AS: 'Asia', AF: 'Africa', NA: 'North America', SA: 'South America', OC: 'Oceania' };
   const APP_NAME = { 'city-placer': 'City Placer', 'phone-codes': 'Phone codes', 'plate-trainer': 'Plates', 'bollards': 'Bollards',
-    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz' };
+    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz', 'duels': 'Duels' };
   let dark = true; try { const v = localStorage.getItem('atlas.dark'); if (v !== null) dark = JSON.parse(v); } catch (e) {}
   let invOv = {}; try { invOv = JSON.parse(localStorage.getItem('atlas.inv') || '{}'); } catch (e) {}
   const imgCls = c => dark && (c.id in invOv ? invOv[c.id] : c.invert) ? 'inv' : (dark && c.light ? 'dim' : '');

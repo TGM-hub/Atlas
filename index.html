@@ -63,7 +63,7 @@
   .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
   .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
   #darkToggle { margin-left: auto; }
-  #dailyLink, #mixLink, #cmpLink, #quizLink { text-decoration: none; color: inherit; }
+  #dailyLink, #mixLink, #cmpLink, #quizLink, #duelsLink { text-decoration: none; color: inherit; }
 
   /* --- Carte --- */
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
@@ -297,6 +297,7 @@
     <button id="weakToggle" class="chip" title="Colour the map by your accuracy in the trainers"><b>Weak spots</b><span class="n" id="weakState"></span></button>
     <a id="cmpLink" class="chip" href="compare.html" title="Two countries side by side"><b>Compare</b><span class="n">⚖</span></a>
     <a id="quizLink" class="chip" href="quiz.html" title="Recall the cards, spaced repetition"><b>Quiz</b><span class="n">⟳</span></a>
+    <a id="duelsLink" class="chip" href="games.html" title="Your Duels and Team Duels, place by place (imported from geo-review, stays in this browser)"><b>Duels</b><span class="n">⚔</span></a>
     </div>
   </header>
   <div id="mapwrap">
@@ -414,7 +415,7 @@
   // ---------- Weak spots : tgm.stats (byCountry de chaque trainer) + tgm.confusions ----------
   let weak = store.get('weak', false);
   const APP_NAME = { 'city-placer': 'City Placer', 'phone-codes': 'Phone codes', 'plate-trainer': 'Plates', 'bollards': 'Bollards',
-    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz' };
+    'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz', 'duels': 'Duels' };
   const WMIN = 3;                                   // answers needed before a country gets a colour
   const wBucket = a => a < 0.5 ? 0 : a < 0.65 ? 1 : a < 0.8 ? 2 : a < 0.9 ? 3 : 4;
   const WCOL = ['#d9614c', '#e8995a', '#e9cf6a', '#9fcb7a', '#5fae7e'];

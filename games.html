@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duels review · GeoGuessr Atlas</title>
+<style>
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --ok: #7cc7b4; --mid: #e9cf6a; --ko: #ef7d6b;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
+  body { padding: 16px 16px 60px; }
+  .wrap { max-width: 1150px; margin: 0 auto; }
+  a { color: var(--ok); }
+  button, select { font: inherit; color: inherit; }
+  button { background: var(--land); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--ok); }
+  button.on { background: var(--sign); color: #1a1a1a; border-color: var(--sign); }
+  :focus-visible { outline: 2px solid var(--sign); outline-offset: 2px; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  header h1 { margin: 0; font-size: 25px; }
+  header .right { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 13px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  section h2 { margin: 0 0 10px; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  section h2 .r { margin-left: auto; text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .grp { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+  .grp .lbl { color: var(--muted); font-size: 13px; margin-right: 2px; }
+  .grp button { padding: 4px 9px; font-size: 14px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .kpi b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--muted); font-size: 12px; }
+  .tw { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { padding: 6px 8px; border-top: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 400; font-size: 12px; border-top: 0; cursor: pointer; user-select: none; }
+  th.on { color: var(--sign); }
+  th:first-child, td:first-child { text-align: left; }
+  td.l { text-align: left; white-space: normal; }
+  tr.row { cursor: pointer; }
+  tr.row:hover td { background: #16303f; }
+  .pct { font-variant-numeric: tabular-nums; }
+  .bar { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: var(--line); vertical-align: middle; margin-left: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips a, .chips span { border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 13px; text-decoration: none; color: var(--ink); }
+  .chips a:hover { border-color: var(--sign); color: var(--sign); }
+  .ok { color: var(--ok); } .ko { color: var(--ko); } .mid { color: var(--mid); }
+  .rd td { vertical-align: top; }
+  .rd small { display: block; color: var(--muted); font-size: 12px; white-space: normal; }
+  .empty { padding: 24px 10px; color: var(--muted); }
+  .empty code { color: var(--ink); }
+  #back { margin-bottom: 10px; }
+  @media (max-width: 720px) {
+    .two { grid-template-columns: 1fr; }
+    .bar { display: none; }
+    th, td { padding: 5px 6px; }
+    .kpi b { font-size: 20px; }
+  }
+</style>
+<!-- tgm-pwa : hors-ligne et installation, généré par Atlas/tools/pwa.py -->
+<link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+<!-- /tgm-pwa -->
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Duels review</h1>
+    <span class="muted" id="sub">your Duels and Team Duels, place by place · data stays in this browser</span>
+    <span class="right"><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
+      <a href="confusions.html">Mix-ups ↗</a><a href="./">Atlas ↗</a></span>
+  </header>
+  <div id="out"></div>
+</div>
+
+<script src="tgm-core.js"></script>
+<script src="data.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const T = window.TGM, A = window.ATLAS || { apps: [] };
+  const KEY = 'duels.review', PKEY = 'duels.reviewPrefs';     // not tgm.*: the games never go to the GitHub backup
+  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
+  const nameOf = iso => (T && T.name(iso, 'en')) || iso;
+  const flag = iso => (T && iso ? T.flag(iso) : '');
+  const pct = (a, b) => b ? Math.round(a / b * 100) : null;
+  const col = p => p == null ? 'var(--line)' : p < 30 ? 'var(--ko)' : p < 60 ? 'var(--mid)' : 'var(--ok)';
+  const pctCell = (a, b) => { const p = pct(a, b); return p == null ? '<td class="muted">–</td>' : `<td class="pct">${p} %<span class="bar"><i style="width:${p}%;background:${col(p)}"></i></span></td>`; };
+
+  let D = null;
+  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost' }, lsGet(PKEY, {}));
+  const saveP = () => { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} };
+
+  function load() {
+    try { const t = localStorage.getItem(KEY); D = t ? JSON.parse(t) : null; } catch (e) { D = null; }
+    if (D && D.v !== 1) D = null;
+  }
+  // rounds as objects, with the guess taken into account (mine, or the team's best)
+  function rows() {
+    if (!D) return [];
+    const gc = D.gameCols, rc = D.roundCols, qc = D.guessCols;
+    const G = D.games.map(g => Object.fromEntries(gc.map((k, i) => [k, g[i]])));
+    const last = G.length ? new Date(G[G.length - 1].started + 'Z').getTime() : 0;
+    const out = [];
+    for (const r of D.rounds) {
+      const o = Object.fromEntries(rc.map((k, i) => [k, r[i]]));
+      const g = G[o.game];
+      if (prefs.mode && g.mode !== prefs.mode) continue;
+      if (prefs.rated && String(g.rated) !== prefs.rated) continue;
+      if (prefs.move && g.movement !== prefs.move) continue;
+      if (prefs.days && new Date(g.started + 'Z').getTime() < last - prefs.days * 864e5) continue;
+      const q = a => a ? Object.fromEntries(qc.map((k, i) => [k, a[i]])) : null;
+      o.g = g; o.meG = q(o.me); o.mateG = q(o.mate);
+      o.G = prefs.who === 'team' ? ([o.meG, o.mateG].filter(Boolean).find(x => x.teamBest) || o.meG || o.mateG) : o.meG;
+      if (!o.G) continue;
+      out.push(o);
+    }
+    return out;
+  }
+  function byCountry(list) {
+    const m = {};
+    for (const o of list) {
+      const c = m[o.country] = m[o.country] || { iso: o.country, n: 0, okC: 0, nA: 0, okA: 0, nP: 0, okP: 0, km: 0, lost: 0, wrong: {} };
+      c.n++; c.okC += o.G.okCountry ? 1 : 0; c.km += o.G.km || 0;
+      if (o.G.okAdmin1 != null) { c.nA++; c.okA += o.G.okAdmin1 ? 1 : 0; }
+      if (o.G.okPhone != null) { c.nP++; c.okP += o.G.okPhone ? 1 : 0; }
+      if (o.damage < 0) c.lost -= o.damage;
+      if (!o.G.okCountry && o.G.country) c.wrong[o.G.country] = (c.wrong[o.G.country] || 0) + 1;
+    }
+    return Object.values(m);
+  }
+
+  // Atlas: duels count like a trainer (Weak spots, Mix-ups, comparator, daily review) — all games, my own guesses
+  function pushAtlas() {
+    if (!T || !D) return;
+    const saved = Object.assign({}, prefs); Object.assign(prefs, { mode: '', rated: '', move: '', days: 0, who: 'me' });
+    const list = rows(); Object.assign(prefs, saved);
+    const s = { seen: 0, correct: 0, practiced: 0, mastered: 0, weak: 0, byCountry: {} }, pairs = {};
+    for (const o of list) {
+      s.seen++; if (o.G.okCountry) s.correct++;
+      const b = s.byCountry[o.country] = s.byCountry[o.country] || { seen: 0, correct: 0, practiced: 1, mastered: 0, weak: 0 };
+      b.seen++; if (o.G.okCountry) b.correct++;
+      if (!o.G.okCountry && o.G.country) { const k = o.country + '|' + o.G.country; pairs[k] = (pairs[k] || 0) + 1; }
+    }
+    s.practiced = Object.keys(s.byCountry).length;
+    T.stats.write('duels', s);
+    if (T.confusions) T.confusions.seed('duels', Object.entries(pairs).map(([k, n]) => [...k.split('|'), n]));
+  }
+
+  const filt = (lbl, key, opts) => `<div class="grp" data-k="${key}"><span class="lbl">${lbl}</span>${opts.map(([v, t]) =>
+    `<button data-v="${v}" class="${String(prefs[key]) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+
+  function render() {
+    if (!D) {
+      $('out').innerHTML = `<section class="empty"><p>No games imported on this browser yet.</p>
+        <p>On your PC, in <code>geo-review</code>: <code>fetch.cmd</code> (gets your new games and places them), then <code>review.cmd</code>
+        (writes <code>review.json</code> and opens this page). Then <b>Import review.json</b> above.</p>
+        <p class="muted">The file stays in this browser (it is never sent anywhere); only per-country totals feed the Atlas Weak spots and Mix-ups.</p></section>`;
+      return;
+    }
+    $('sub').textContent = `${D.games.length} games, ${D.rounds.length} rounds · imported ${new Date(D.made).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · stays in this browser`;
+    const iso = location.hash.slice(1).toUpperCase();
+    const list = rows();
+    let html = `<section class="filters">`
+      + filt('Mode', 'mode', [['', 'All'], ['TeamDuels', 'Team Duels'], ['Duels', 'Duels']])
+      + filt('', 'rated', [['', 'All'], ['1', 'Ranked'], ['0', 'Unranked']])
+      + filt('', 'move', [['', 'All'], ['Move', 'Move'], ['NM', 'NM'], ['NMPZ', 'NMPZ']])
+      + filt('Period', 'days', [[0, 'All'], [30, '30 d'], [7, '7 d']])
+      + filt('Guess', 'who', [['me', 'Mine'], ['team', "Team's best"]]) + `</section>`;
+    html += /^[A-Z]{2}$/.test(iso) ? countryView(iso, list) : overview(list);
+    $('out').innerHTML = html;
+    $('out').querySelectorAll('.grp button').forEach(b => b.onclick = () => {
+      const k = b.parentElement.dataset.k; prefs[k] = k === 'days' ? +b.dataset.v : b.dataset.v; saveP(); render();
+    });
+    $('out').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { location.hash = tr.dataset.iso.toLowerCase(); });
+    $('out').querySelectorAll('th[data-s]').forEach(th => th.onclick = () => { prefs.sort = th.dataset.s; saveP(); render(); });
+    const bk = $('back'); if (bk) bk.onclick = () => { history.pushState(null, '', location.pathname); render(); };
+  }
+
+  function kpis(list) {
+    const c = byCountry(list), sum = k => c.reduce((a, x) => a + x[k], 0);
+    const kms = list.map(o => o.G.km).sort((a, b) => a - b), med = kms.length ? kms[kms.length >> 1] : 0;
+    return `<section class="kpis">
+      <div class="kpi"><b>${list.length}</b><span>rounds</span></div>
+      <div class="kpi"><b>${pct(sum('okC'), sum('n')) ?? '–'} %</b><span>right country</span></div>
+      <div class="kpi"><b>${pct(sum('okA'), sum('nA')) ?? '–'} %</b><span>right region (state, province…)</span></div>
+      <div class="kpi"><b>${pct(sum('okP'), sum('nP')) ?? '–'} %</b><span>right area code (${sum('nP')} rounds with codes)</span></div>
+      <div class="kpi"><b>${Math.round(med)} km</b><span>median distance</span></div>
+      <div class="kpi"><b>${sum('lost').toLocaleString('en-GB')}</b><span>HP lost (team)</span></div></section>`;
+  }
+
+  function overview(list) {
+    const c = byCountry(list).filter(x => x.iso);
+    const S = { lost: x => -x.lost, n: x => -x.n, c: x => x.okC / x.n, a: x => x.nA ? x.okA / x.nA : 2, p: x => x.nP ? x.okP / x.nP : 2, km: x => -x.km / x.n, name: x => nameOf(x.iso) };
+    const f = S[prefs.sort] || S.lost;
+    c.sort((a, b) => { const x = f(a), y = f(b); return typeof x === 'string' ? x.localeCompare(y) : x - y || b.n - a.n; });
+    const th = (k, t) => `<th data-s="${k}" class="${prefs.sort === k ? 'on' : ''}">${t}</th>`;
+    return kpis(list) + `<section><h2>By country <span class="r muted">click a country for its regions and rounds · click a header to sort</span></h2><div class="tw"><table>
+      <tr>${th('name', 'Country')}${th('n', 'Rounds')}${th('c', 'Country')}${th('a', 'Region')}${th('p', 'Area code')}${th('km', 'Avg km')}${th('lost', 'HP lost')}<th>Taken for</th></tr>`
+      + c.map(x => {
+        const w = Object.entries(x.wrong).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => `${flag(k)} ${k} ${n}`).join(' · ');
+        return `<tr class="row" data-iso="${x.iso}"><td>${flag(x.iso)} ${esc(nameOf(x.iso))}</td><td>${x.n}</td>${pctCell(x.okC, x.n)}${pctCell(x.okA, x.nA)}${pctCell(x.okP, x.nP)}`
+          + `<td>${Math.round(x.km / x.n)}</td><td>${x.lost.toLocaleString('en-GB')}</td><td class="l muted">${w}</td></tr>`;
+      }).join('') + `</table></div></section>`;
+  }
+
+  const appLink = (a, iso) => a.deeplink ? a.deeplink.replace('{iso}', iso.toLowerCase()) : a.url;
+  const svLink = o => {
+    let id = o.pano || '';
+    if (/^[0-9A-F]+$/i.test(id) && id.length % 2 === 0) id = id.match(/../g).map(h => String.fromCharCode(parseInt(h, 16))).join('');   // GeoGuessr hex-encodes the pano id
+    return id ? `https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(id)}&heading=${Math.round(o.heading || 0)}`
+      : `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${o.lat},${o.lng}`;
+  };
+  function countryView(iso, all) {
+    const list = all.filter(o => o.country === iso);
+    const c = byCountry(list)[0];
+    let h = `<button id="back">← All countries</button>`;
+    if (!c) return h + `<section class="empty">No round in ${esc(nameOf(iso))} with these filters.</section>`;
+    h += `<section><h2>${flag(iso)} ${esc(nameOf(iso))}<span class="r"><a href="./#${iso.toLowerCase()}">Atlas page ↗</a></span></h2>${kpis(list).replace('<section class="kpis">', '<div class="kpis">').replace(/<\/section>$/, '</div>')}</section>`;
+    // regions
+    const reg = {};
+    for (const o of list) {
+      const k = o.admin1 || '(unknown)', r = reg[k] = reg[k] || { n: 0, ok: 0, nn: 0, km: 0, lost: 0, as: {} };
+      r.n++; r.km += o.G.km || 0; if (o.damage < 0) r.lost -= o.damage;
+      if (o.G.okAdmin1 != null) { r.nn++; r.ok += o.G.okAdmin1 ? 1 : 0; }
+      if (!o.G.okAdmin1 && o.G.okCountry && o.G.admin1) r.as[o.G.admin1] = (r.as[o.G.admin1] || 0) + 1;
+    }
+    const regs = Object.entries(reg).sort((a, b) => b[1].lost - a[1].lost || b[1].n - a[1].n);
+    h += `<div class="two"><section><h2>Regions <span class="r muted">where it was · you guessed instead</span></h2><div class="tw"><table><tr><th>Region</th><th>Rounds</th><th>Right</th><th>Avg km</th><th>HP lost</th><th>Guessed instead</th></tr>`
+      + regs.map(([k, r]) => `<tr><td class="l">${esc(k)}</td><td>${r.n}</td>${pctCell(r.ok, r.nn)}<td>${Math.round(r.km / r.n)}</td><td>${r.lost.toLocaleString('en-GB')}</td>`
+        + `<td class="l muted">${Object.entries(r.as).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([x, n]) => `${esc(x)} ${n}`).join(' · ')}</td></tr>`).join('') + `</table></div></section>`;
+    // what to study
+    const wrong = Object.entries(c.wrong).sort((a, b) => b[1] - a[1]);
+    const tr = (A.apps || []).filter(a => a.countries.includes(iso) && (a.deeplink || a.scope === 'country') && a.status !== 'archived');
+    const langs = [...new Set(list.flatMap(o => o.langs || []))];
+    const codes = [...new Set(list.map(o => o.phone).filter(Boolean))];
+    h += `<section><h2>Study</h2>`
+      + (wrong.length ? `<p class="muted">Taken for</p><div class="chips">${wrong.map(([k, n]) => `<a href="compare.html#${iso.toLowerCase()}/${k.toLowerCase()}" title="Compare">${flag(k)} ${esc(nameOf(k))} ${n} ⚖</a>`).join('')}</div>` : '<p class="muted">Never taken for another country with these filters.</p>')
+      + (tr.length ? `<p class="muted">Explore in the trainers</p><div class="chips">${tr.map(a => `<a href="${esc(appLink(a, iso))}" target="_blank" rel="noopener">${esc(a.name.en)} ↗</a>`).join('')}</div>` : '')
+      + (T.plonkitUrl && T.plonkitUrl(iso) ? `<p class="muted">Guide</p><div class="chips"><a href="${esc(T.plonkitUrl(iso))}" target="_blank" rel="noopener">Plonk It ↗</a></div>` : '')
+      + (codes.length ? `<p class="muted">Area codes met (${codes.length})</p><div class="chips">${codes.slice(0, 24).map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
+      + (langs.length ? `<p class="muted">Languages met</p><div class="chips">${langs.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
+      + `</section></div>`;
+    // rounds, worst first
+    const rs = list.slice().sort((a, b) => (a.damage || 0) - (b.damage || 0) || b.G.km - a.G.km).slice(0, 60);
+    const g = (x, me) => x ? `<span class="${x.okCountry ? (x.okAdmin1 ? 'ok' : 'mid') : 'ko'}">${x.okCountry ? '' : flag(x.country) + ' '}${esc(x.admin1 || x.country || '?')}</span> <span class="muted">${Math.round(x.km)} km${me && x.teamBest ? ' ★' : ''}</span>` : '<span class="muted">no guess</span>';
+    h += `<section><h2>Rounds <span class="r muted">worst first (HP, then distance) · ★ team's guess · green right region, yellow right country</span></h2><div class="tw"><table class="rd">
+      <tr><th>Game</th><th>Where it was</th><th>Code · language</th><th>You</th><th>Mate</th><th>HP</th></tr>`
+      + rs.map(o => `<tr><td>${esc(o.g.started.slice(0, 10))}<small>${esc(o.g.mode === 'TeamDuels' ? 'Team' : 'Duel')} · ${esc(o.g.movement)} · r${o.n}</small></td>`
+        + `<td class="l">${esc(o.admin1 || '?')}${o.region ? ` <span class="muted">(${esc(o.region)})</span>` : ''}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a></small></td>`
+        + `<td class="l">${esc(o.phone || '')}<small>${esc((o.langs || []).join(', '))}</small></td>`
+        + `<td class="l">${g(o.meG, true)}</td><td class="l">${o.g.mode === 'TeamDuels' ? g(o.mateG) : ''}</td>`
+        + `<td class="${o.damage < 0 ? 'ko' : o.damage > 0 ? 'ok' : 'muted'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')}</td></tr>`).join('')
+      + `</table></div></section>`;
+    return h;
+  }
+
+  $('imp').onclick = () => $('file').click();
+  $('file').onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (d.v !== 1 || !Array.isArray(d.rounds)) throw new Error('not a review.json from geo-review');
+      localStorage.setItem(KEY, JSON.stringify(d));
+      load(); pushAtlas(); render();
+    } catch (err) { alert('Import failed: ' + err.message); }
+    e.target.value = '';
+  };
+  addEventListener('hashchange', render);
+  load(); render();
+})();
+</script>
+</body>
+</html>
