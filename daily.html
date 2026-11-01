@@ -273,6 +273,18 @@ function chooseS2(tr) {
 function choosePlonk(tr) {
   const d = today(), recent = new Set(st.log.filter(e => e.app === 'plonk' && e.iso && daysBetween(e.d, d) < 21).map(e => e.iso));
   const cands = PLONKIT.filter(k => tierOf(k) <= 2 && !recent.has(k));
+  // Real games first (Duels review, tgm.duels.summary): the country where missing the region has cost the most HP
+  // (total, so frequent countries come first; each comes back at most once in 21 days)
+  const DS = (LS.get('tgm.duels.summary', null) || {}).countries || {};
+  let duel = null;
+  for (const k of cands) {
+    const c = DS[k]; if (!c || c.n < 6 || !c.nA) continue;
+    const w = (1 - c.okA / c.nA) * c.lost;
+    if (!duel || w > duel.w) duel = { iso: k, w,
+      why: `your duels: ${Math.round(c.okA / c.nA * 100)} % right region over ${c.n} rounds, ${Math.round(c.lost / c.n)} HP lost per round`
+        + (c.weak && c.weak.length ? ` · weakest: ${c.weak.map(r => r[0]).join(', ')}` : '') };
+  }
+  if (duel) return duel;
   let best = null;
   for (const k of cands) {
     const a = tr['city-placer'].per[k], b = tr['bollards'].per[k];
@@ -441,7 +453,8 @@ function renderPlonk(p) {
     <div class="row"><span class="country">${flag(iso)} ${esc(TGM.name(iso, 'en'))}</span>
       <a href="${plonkUrl(iso)}" target="_blank" rel="noopener">Open the Plonk It page ↗</a>
       ${APPS.bollards.iso ? `<a href="${APPS.bollards.iso.replace('{iso}', iso.toLowerCase())}" target="_blank" rel="noopener">Country's bollards ↗</a>` : ''}
-      <a href="${HOST}city-placer/#${iso.toLowerCase()}" target="_blank" rel="noopener">Country's cities ↗</a></div>
+      <a href="${HOST}city-placer/#explore/${iso.toLowerCase()}" target="_blank" rel="noopener">Country's cities ↗</a>
+      ${((LS.get('tgm.duels.summary', null) || {}).countries || {})[iso] ? `<a href="games.html#${iso.toLowerCase()}">Your duels here ↗</a>` : ''}</div>
     ${notes.filter(n => n !== todayNote).length ? `<div class="muted" style="margin-top:10px">What you noted before:</div><ul>${
       notes.filter(n => n !== todayNote).slice(-6).map(n => `<li>${esc(n.t)} <span class="muted">(${n.d})</span></li>`).join('')}</ul>` : ''}
     <textarea id="note" placeholder="2 or 3 clues to remember, one per line">${esc(todayNote ? todayNote.t : '')}</textarea>

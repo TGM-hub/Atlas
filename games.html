@@ -48,6 +48,8 @@
   .bar { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: var(--line); vertical-align: middle; margin-left: 6px; overflow: hidden; }
   .bar i { display: block; height: 100%; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .two > * { min-width: 0; }
+  section h2 .r { white-space: normal; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chips a, .chips span { border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; font-size: 13px; text-decoration: none; color: var(--ink); }
   .chips a:hover { border-color: var(--sign); color: var(--sign); }
@@ -57,6 +59,27 @@
   .empty { padding: 24px 10px; color: var(--muted); }
   .empty code { color: var(--ink); }
   #back { margin-bottom: 10px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tabs a { text-decoration: none; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; }
+  .tabs a.on { background: var(--sign); color: #1a1a1a; border-color: var(--sign); }
+  .hp { display: inline-block; width: 60px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; vertical-align: middle; margin-left: 4px; }
+  .hp i { display: block; height: 100%; }
+  .gnav { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  #mapbox { position: relative; }
+  #map { width: 100%; height: min(62vh, 560px); display: block; background: #0b1c29; border-radius: 8px; touch-action: none; cursor: grab; }
+  #map path.reg { stroke: #0b1c29; stroke-width: var(--sw, .05); }
+  #map path.reg.none { fill: #23394a; }
+  #map circle { stroke: #0b1c29; stroke-width: var(--sw, .05); cursor: pointer; }
+  #map circle.sel { stroke: #fff; }
+  #map line { stroke-width: var(--lw, .08); pointer-events: none; }
+  #map line.mate { stroke-dasharray: var(--da, .3) var(--da, .3); }
+  #mapinfo { margin-top: 8px; font-size: 13px; min-height: 36px; }
+  .wlegend { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .wlegend i { width: 16px; height: 9px; border-radius: 2px; display: inline-block; }
+  .wlegend span { margin-right: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.ok { background: var(--ok); } .dot.mid { background: var(--mid); } .dot.ko { background: var(--ko); }
+  tr.mrow { cursor: pointer; } tr.mrow:hover td { background: #16303f; }
   @media (max-width: 720px) {
     .two { grid-template-columns: 1fr; }
     .bar { display: none; }
@@ -74,7 +97,7 @@
   <header>
     <h1>Duels review</h1>
     <span class="muted" id="sub">your Duels and Team Duels, place by place · data stays in this browser</span>
-    <span class="right"><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
+    <span class="right"><button id="link" hidden title="Pick geo-review\review.json once: the page then reloads it by itself">Link review.json</button><button id="reload" hidden>Reload review.json</button><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
       <a href="confusions.html">Mix-ups ↗</a><a href="./">Atlas ↗</a></span>
   </header>
   <div id="out"></div>
@@ -96,7 +119,7 @@
   const pctCell = (a, b) => { const p = pct(a, b); return p == null ? '<td class="muted">–</td>' : `<td class="pct">${p} %<span class="bar"><i style="width:${p}%;background:${col(p)}"></i></span></td>`; };
 
   let D = null;
-  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost' }, lsGet(PKEY, {}));
+  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost', mate: '', lines: false }, lsGet(PKEY, {}));
   const saveP = () => { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} };
 
   function load() {
@@ -117,6 +140,7 @@
       if (prefs.rated && String(g.rated) !== prefs.rated) continue;
       if (prefs.move && g.movement !== prefs.move) continue;
       if (prefs.days && new Date(g.started + 'Z').getTime() < last - prefs.days * 864e5) continue;
+      if (prefs.mate === 'solo' ? g.mate : prefs.mate && g.mate !== prefs.mate) continue;
       const q = a => a ? Object.fromEntries(qc.map((k, i) => [k, a[i]])) : null;
       o.g = g; o.meG = q(o.me); o.mateG = q(o.mate);
       o.G = prefs.who === 'team' ? ([o.meG, o.mateG].filter(Boolean).find(x => x.teamBest) || o.meG || o.mateG) : o.meG;
@@ -152,37 +176,165 @@
     }
     s.practiced = Object.keys(s.byCountry).length;
     T.stats.write('duels', s);
+    // per-country summary for the daily review: region accuracy, HP lost, weakest regions
+    const sum = {};
+    for (const o of list) {
+      const c = sum[o.country] = sum[o.country] || { n: 0, nA: 0, okA: 0, lost: 0, r: {} };
+      c.n++; if (o.damage < 0) c.lost -= o.damage;
+      if (o.G.okAdmin1 != null) { c.nA++; c.okA += o.G.okAdmin1 ? 1 : 0; }
+      if (o.admin1) { const r = c.r[o.admin1] = c.r[o.admin1] || [0, 0, 0]; r[0]++; r[1] += o.G.okAdmin1 ? 1 : 0; if (o.damage < 0) r[2] -= o.damage; }
+    }
+    for (const c of Object.values(sum)) {
+      c.weak = Object.entries(c.r).filter(([, r]) => r[0] >= 2 && r[1] / r[0] < 0.5).sort((a, b) => b[1][2] - a[1][2]).slice(0, 3).map(([k, r]) => [k, ...r]);
+      delete c.r;
+    }
+    try { localStorage.setItem('tgm.duels.summary', JSON.stringify({ made: D.made, countries: sum })); } catch (e) {}
     if (T.confusions) T.confusions.seed('duels', Object.entries(pairs).map(([k, n]) => [...k.split('|'), n]));
+  }
+
+  // Teammates: nicknames looked up by geo-review (users), games counted over the whole import
+  const nick = id => (D.users || {})[id] || 'mate ' + String(id).slice(-4);
+  function mates() {
+    const n = {};
+    D.games.forEach(g => { const m = g[D.gameCols.indexOf('mate')]; if (m) n[m] = (n[m] || 0) + 1; });
+    return Object.entries(n).sort((a, b) => b[1] - a[1]);
+  }
+  const mateFilter = () => {
+    const ms = mates();
+    if (!ms.length) return '';
+    return filt('Teammate', 'mate', [['', 'All'], ['solo', 'Solo duels'], ...ms.filter(([, n]) => n >= 3).map(([id, n]) => [id, `${esc(nick(id))} <span class="muted">${n}</span>`])]);
+  };
+  function mateTable() {
+    const saved = prefs.mate; prefs.mate = '';
+    const list = rows(); prefs.mate = saved;
+    const m = {};
+    for (const o of list) {
+      const id = o.g.mate || 'solo', x = m[id] = m[id] || { games: new Set(), won: new Set(), n: 0, me: 0, mt: 0, meA: 0, mtA: 0, nA: 0, mine: 0, km: 0 };
+      x.games.add(o.game); if (o.g.won) x.won.add(o.game);
+      x.n++; x.me += o.meG && o.meG.okCountry ? 1 : 0; x.mt += o.mateG && o.mateG.okCountry ? 1 : 0;
+      if (o.meG && o.meG.okAdmin1 != null) { x.nA++; x.meA += o.meG.okAdmin1 ? 1 : 0; x.mtA += o.mateG && o.mateG.okAdmin1 ? 1 : 0; }
+      if (o.meG && o.meG.teamBest) x.mine++;
+    }
+    const rowsH = Object.entries(m).sort((a, b) => b[1].games.size - a[1].games.size).map(([id, x]) => {
+      const solo = id === 'solo';
+      return `<tr class="mrow" data-m="${id}"><td>${solo ? 'Solo duels' : esc(nick(id))}</td><td>${x.games.size}</td>${pctCell(x.won.size, x.games.size)}<td>${x.n}</td>`
+        + `${pctCell(x.me, x.n)}${solo ? '<td class="muted">–</td>' : pctCell(x.mt, x.n)}${pctCell(x.meA, x.nA)}${solo ? '<td class="muted">–</td>' : pctCell(x.mtA, x.nA)}`
+        + `${solo ? '<td class="muted">–</td>' : pctCell(x.mine, x.n)}</tr>`;
+    }).join('');
+    return `<section><h2>By teammate <span class="r muted">click to filter · same filters except teammate</span></h2><div class="tw"><table>
+      <tr><th>Teammate</th><th>Games</th><th>Won</th><th>Rounds</th><th>Country (me)</th><th>Country (mate)</th><th>Region (me)</th><th>Region (mate)</th><th>Team guess was mine</th></tr>${rowsH}</table></div></section>`;
   }
 
   const filt = (lbl, key, opts) => `<div class="grp" data-k="${key}"><span class="lbl">${lbl}</span>${opts.map(([v, t]) =>
     `<button data-v="${v}" class="${String(prefs[key]) === String(v) ? 'on' : ''}">${t}</button>`).join('')}</div>`;
 
+  // ---------------------------------------------------------------- map (admin-1 shapes from City Placer, same site)
+  let mapData = null;
+  const TOPO = {};
+  const decode = (topo, obj) => {
+    const [sx, sy] = topo.transform.scale, [tx, ty] = topo.transform.translate;
+    const arcs = topo.arcs.map(a => { let x = 0, y = 0; return a.map(([dx, dy]) => { x += dx; y += dy; return [x * sx + tx, y * sy + ty]; }); });
+    const ring = idx => { const pts = []; idx.forEach(k => { const seg = k >= 0 ? arcs[k] : arcs[~k].slice().reverse(); pts.push(...(pts.length ? seg.slice(1) : seg)); }); return pts; };
+    return topo.objects[obj].geometries.map(g => ({ name: (g.properties || {}).name,
+      polys: g.type === 'Polygon' ? [g.arcs.map(ring)] : g.type === 'MultiPolygon' ? g.arcs.map(p => p.map(ring)) : [] }));
+  };
+  async function drawMap() {
+    const svg = $('map'), { iso, list, regs } = mapData;
+    let feats = [];
+    try {
+      if (!(iso in TOPO)) { const r = await fetch(`../city-placer/admin1/${iso}.json`); TOPO[iso] = r.ok ? await r.json() : null; }
+      if (TOPO[iso]) feats = decode(TOPO[iso].topo, 'sub');
+    } catch (e) { TOPO[iso] = null; }
+    if (svg !== $('map')) return;                      // re-rendered meanwhile
+    // equirectangular around the country's middle latitude: x = lng · cos(lat0), y = −lat
+    const lats = list.map(o => o.lat), lngs = list.map(o => o.lng);
+    feats.forEach(f => f.polys.forEach(p => p[0].forEach(([x, y]) => { lngs.push(x); lats.push(y); })));
+    let x0 = Math.min(...lngs), x1 = Math.max(...lngs);
+    const wrap = x1 - x0 > 180;                          // Russia, US (Aleutians), Fiji…: carry the western longitudes past 180°
+    const W = lng => wrap && lng < 0 ? lng + 360 : lng;
+    x0 = Math.min(...lngs.map(W)); x1 = Math.max(...lngs.map(W));
+    const y0 = Math.min(...lats), y1 = Math.max(...lats);
+    const k = Math.cos((y0 + y1) / 2 * Math.PI / 180);
+    const P = (lng, lat) => [W(lng) * k, -lat];
+    const pad = Math.max((x1 - x0) * k, y1 - y0) * 0.05;
+    let vb = { x: x0 * k - pad, y: -y1 - pad, w: (x1 - x0) * k + 2 * pad, h: (y1 - y0) + 2 * pad };
+    const fillOf = name => { const r = regs[name]; if (!r || !r.nn) return null; const p = r.ok / r.nn; return ['#d9614c', '#e8995a', '#e9cf6a', '#9fcb7a', '#5fae7e'][Math.min(4, Math.floor(p * 5))]; };
+    const pathOf = polys => polys.map(p => p.map(r => 'M' + r.map(([x, y]) => P(x, y).map(v => v.toFixed(3)).join(',')).join('L') + 'Z').join('')).join('');
+    let html = feats.map(f => { const c = fillOf(f.name); return `<path class="reg${c ? '' : ' none'}" ${c ? `style="fill:${c}"` : ''} d="${pathOf(f.polys)}"><title>${esc(f.name)}${regs[f.name] ? ` · ${regs[f.name].n} round(s), ${pct(regs[f.name].ok, regs[f.name].nn) ?? '–'} % right` : ''}</title></path>`; }).join('');
+    html += '<g id="glines"></g>';
+    html += list.map((o, i) => { const [x, y] = P(o.lng, o.lat), c = o.G.okCountry ? (o.G.okAdmin1 ? 'var(--ok)' : 'var(--mid)') : 'var(--ko)';
+      return `<circle data-i="${i}" cx="${x.toFixed(3)}" cy="${y.toFixed(3)}" r="1" style="fill:${c}"><title>${esc(o.g.started.slice(0, 10))} · ${esc(o.admin1 || '')} · ${Math.round(o.G.km)} km</title></circle>`; }).join('');
+    svg.innerHTML = html;
+    const lineG = svg.querySelector('#glines');
+    const lineTo = (o, q, cls) => { if (!q) return ''; const [a, b] = P(o.lng, o.lat), [c, d] = P(q.lng, q.lat);
+      return `<line class="${cls}" x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${q.okCountry ? (q.okAdmin1 ? '#7cc7b4' : '#e9cf6a') : '#ef7d6b'}"/>`; };
+    const showLines = sel => { lineG.innerHTML = (sel != null ? [list[sel]] : prefs.lines ? list : []).map(o => lineTo(o, o.meG, 'me') + lineTo(o, o.mateG, 'mate')).join(''); };
+    const apply = () => {
+      svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+      const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
+      svg.style.setProperty('--sw', (0.8 * s).toFixed(4)); svg.style.setProperty('--lw', (1.6 * s).toFixed(4)); svg.style.setProperty('--da', (4 * s).toFixed(4));
+      svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', (c.classList.contains('sel') ? 6 : 4) * s));
+    };
+    showLines(null); apply();
+    svg.addEventListener('wheel', e => { e.preventDefault(); const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height);
+      const mx = vb.x + (e.clientX - r.left) * s - (r.width * s - vb.w) / 2, my = vb.y + (e.clientY - r.top) * s - (r.height * s - vb.h) / 2, f = Math.exp(e.deltaY * 0.0015);
+      vb = { x: mx - (mx - vb.x) * f, y: my - (my - vb.y) * f, w: vb.w * f, h: vb.h * f }; apply(); }, { passive: false });
+    let drag = null;
+    svg.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, vb: { ...vb }, moved: false }; });
+    svg.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (Math.hypot(dx, dy) > 4) drag.moved = true; if (!drag.moved) return;
+      const r = svg.getBoundingClientRect(), s = Math.max(vb.w / r.width, vb.h / r.height); vb = { ...drag.vb, x: drag.vb.x - dx * s, y: drag.vb.y - dy * s }; apply(); });
+    svg.addEventListener('pointerup', e => {
+      const moved = drag && drag.moved; drag = null; if (moved) return;
+      const c = e.target.closest && e.target.closest('circle');
+      svg.querySelectorAll('circle.sel').forEach(x => x.classList.remove('sel'));
+      if (!c) { showLines(null); apply(); return; }
+      c.classList.add('sel'); svg.appendChild(c);
+      const i = +c.dataset.i, o = list[i]; showLines(i); apply();
+      const q = (x, who) => x ? `${who}: ${x.okCountry ? '' : flag(x.country) + ' '}${esc(x.admin1 || x.country || '?')}, ${Math.round(x.km)} km${x.teamBest ? ' ★' : ''}` : '';
+      $('mapinfo').innerHTML = `<b>${esc(o.admin1 || '?')}</b>${o.city ? ' · ' + esc(o.city) : ''}${o.phone ? ' · ' + esc(o.phone) : ''} · ${esc(o.g.started.slice(0, 10))} r${o.n}`
+        + ` · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a><br>${[q(o.meG, 'You'), o.g.mate ? q(o.mateG, esc(nick(o.g.mate))) : ''].filter(Boolean).join(' · ')}`
+        + ` · <span class="${o.damage < 0 ? 'ko' : 'ok'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')} HP</span>`;
+    });
+    $('lines').onchange = e => { prefs.lines = e.target.checked; saveP(); showLines(null); apply(); };
+    if (window.__mapResize) removeEventListener('resize', window.__mapResize);
+    window.__mapResize = apply; addEventListener('resize', apply);
+  }
+
   function render() {
     if (!D) {
       $('out').innerHTML = `<section class="empty"><p>No games imported on this browser yet.</p>
         <p>On your PC, in <code>geo-review</code>: <code>fetch.cmd</code> (gets your new games and places them), then <code>review.cmd</code>
-        (writes <code>review.json</code> and opens this page). Then <b>Import review.json</b> above.</p>
+        (writes <code>review.json</code> and opens this page). Then <b>Link review.json</b> above (once: afterwards the page re-reads it by itself), or <b>Import</b> it.</p>
         <p class="muted">The file stays in this browser (it is never sent anywhere); only per-country totals feed the Atlas Weak spots and Mix-ups.</p></section>`;
       return;
     }
     $('sub').textContent = `${D.games.length} games, ${D.rounds.length} rounds · imported ${new Date(D.made).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })} · stays in this browser`;
-    const iso = location.hash.slice(1).toUpperCase();
+    const h = decodeURIComponent(location.hash.slice(1));
+    const iso = h.toUpperCase();
+    const tab = /^g\//.test(h) || h === 'games' ? 'games' : h === 'regions' ? 'regions' : 'countries';
     const list = rows();
     let html = `<section class="filters">`
       + filt('Mode', 'mode', [['', 'All'], ['TeamDuels', 'Team Duels'], ['Duels', 'Duels']])
       + filt('', 'rated', [['', 'All'], ['1', 'Ranked'], ['0', 'Unranked']])
       + filt('', 'move', [['', 'All'], ['Move', 'Move'], ['NM', 'NM'], ['NMPZ', 'NMPZ']])
       + filt('Period', 'days', [[0, 'All'], [30, '30 d'], [7, '7 d']])
-      + filt('Guess', 'who', [['me', 'Mine'], ['team', "Team's best"]]) + `</section>`;
-    html += /^[A-Z]{2}$/.test(iso) ? countryView(iso, list) : overview(list);
+      + filt('Guess', 'who', [['me', 'Mine'], ['team', "Team's best"]]) + mateFilter() + `</section>`;
+    const tabs = `<nav class="tabs"><a href="#" class="${tab === 'countries' ? 'on' : ''}">Countries</a><a href="#regions" class="${tab === 'regions' ? 'on' : ''}">Hardest regions</a><a href="#games" class="${tab === 'games' ? 'on' : ''}">Games</a></nav>`;
+    html = tabs + html;
+    html += /^g\//.test(h) ? gameView(h.slice(2)) : h === 'games' ? gamesList(list) : h === 'regions' ? hardest(list)
+      : /^[A-Z]{2}$/.test(iso) ? countryView(iso, list) : overview(list);
     $('out').innerHTML = html;
     $('out').querySelectorAll('.grp button').forEach(b => b.onclick = () => {
       const k = b.parentElement.dataset.k; prefs[k] = k === 'days' ? +b.dataset.v : b.dataset.v; saveP(); render();
     });
     $('out').querySelectorAll('tr.row').forEach(tr => tr.onclick = () => { location.hash = tr.dataset.iso.toLowerCase(); });
+    $('out').querySelectorAll('tr.grow').forEach(tr => tr.onclick = () => { location.hash = 'g/' + tr.dataset.g; });
+    $('out').querySelectorAll('[data-more]').forEach(b => b.onclick = () => { gamesShown += 100; render(); });
     $('out').querySelectorAll('th[data-s]').forEach(th => th.onclick = () => { prefs.sort = th.dataset.s; saveP(); render(); });
     const bk = $('back'); if (bk) bk.onclick = () => { history.pushState(null, '', location.pathname); render(); };
+    $('out').querySelectorAll('tr.mrow').forEach(tr => tr.onclick = () => { prefs.mate = prefs.mate === tr.dataset.m ? '' : tr.dataset.m; saveP(); render(); });
+    if ($('map')) drawMap();
   }
 
   function kpis(list) {
@@ -203,7 +355,7 @@
     const f = S[prefs.sort] || S.lost;
     c.sort((a, b) => { const x = f(a), y = f(b); return typeof x === 'string' ? x.localeCompare(y) : x - y || b.n - a.n; });
     const th = (k, t) => `<th data-s="${k}" class="${prefs.sort === k ? 'on' : ''}">${t}</th>`;
-    return kpis(list) + `<section><h2>By country <span class="r muted">click a country for its regions and rounds · click a header to sort</span></h2><div class="tw"><table>
+    return kpis(list) + mateTable() + `<section><h2>By country <span class="r muted">click a country for its regions and rounds · click a header to sort</span></h2><div class="tw"><table>
       <tr>${th('name', 'Country')}${th('n', 'Rounds')}${th('c', 'Country')}${th('a', 'Region')}${th('p', 'Area code')}${th('km', 'Avg km')}${th('lost', 'HP lost')}<th>Taken for</th></tr>`
       + c.map(x => {
         const w = Object.entries(x.wrong).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([k, n]) => `${flag(k)} ${k} ${n}`).join(' · ');
@@ -219,6 +371,83 @@
     return id ? `https://www.google.com/maps/@?api=1&map_action=pano&pano=${encodeURIComponent(id)}&heading=${Math.round(o.heading || 0)}`
       : `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${o.lat},${o.lng}`;
   };
+  // ---------------------------------------------------------------- hardest regions: where we know the country but not the region
+  function hardest(list) {
+    const m = {};
+    for (const o of list) {
+      if (!o.admin1) continue;
+      const k = o.country + '|' + o.admin1, r = m[k] = m[k] || { iso: o.country, name: o.admin1, n: 0, okC: 0, nn: 0, ok: 0, km: 0, lost: 0 };
+      r.n++; r.km += o.G.km || 0; if (o.damage < 0) r.lost -= o.damage; if (o.G.okCountry) r.okC++;
+      if (o.G.okAdmin1 != null) { r.nn++; r.ok += o.G.okAdmin1 ? 1 : 0; }
+    }
+    const S = { lost: x => -x.lost, miss: x => x.nn ? x.ok / x.nn - x.okC / x.n : 2, km: x => -x.km / x.n, n: x => -x.n };
+    const sort = S[prefs.rsort] ? prefs.rsort : 'lost';
+    const rs = Object.values(m).filter(x => x.n >= 3).sort((a, b) => S[sort](a) - S[sort](b) || b.n - a.n).slice(0, 60);
+    const th = (k, t) => `<th data-rs="${k}" class="${sort === k ? 'on' : ''}">${t}</th>`;
+    setTimeout(() => $('out').querySelectorAll('th[data-rs]').forEach(t => t.onclick = () => { prefs.rsort = t.dataset.rs; saveP(); render(); }));
+    return kpis(list) + `<section><h2>Hardest regions <span class="r muted">3+ rounds · “vibe gap”: right country, wrong region (landscape, architecture, no readable clue) · click for the country</span></h2><div class="tw"><table>
+      <tr><th>Region</th><th>Country</th>${th('n', 'Rounds')}<th>Country right</th><th>Region right</th>${th('miss', 'Vibe gap')}${th('km', 'Avg km')}${th('lost', 'HP lost')}</tr>`
+      + rs.map(x => { const gap = x.nn ? Math.round((x.okC / x.n - x.ok / x.nn) * 100) : null;
+        return `<tr class="row" data-iso="${x.iso}"><td class="l">${esc(x.name)}</td><td>${flag(x.iso)} ${x.iso}</td><td>${x.n}</td>${pctCell(x.okC, x.n)}${pctCell(x.ok, x.nn)}`
+          + `<td class="${gap >= 60 ? 'ko' : gap >= 30 ? 'mid' : 'muted'}">${gap == null ? '–' : gap + ' pts'}</td><td>${Math.round(x.km / x.n)}</td><td>${x.lost.toLocaleString('en-GB')}</td></tr>`; }).join('')
+      + `</table></div></section>`;
+  }
+
+  // ---------------------------------------------------------------- games: list, then one game round by round
+  let gamesShown = 100;
+  const gameRounds = id => {
+    const gc = D.gameCols, rc = D.roundCols, qc = D.guessCols, gi = D.games.findIndex(g => g[0] === id);
+    if (gi < 0) return null;
+    const g = Object.fromEntries(gc.map((k, i) => [k, D.games[gi][i]]));
+    const q = a => a ? Object.fromEntries(qc.map((k, i) => [k, a[i]])) : null;
+    const rs = D.rounds.filter(r => r[0] === gi).map(r => { const o = Object.fromEntries(rc.map((k, i) => [k, r[i]])); o.g = g; o.meG = q(o.me); o.mateG = q(o.mate); return o; })
+      .sort((a, b) => a.n - b.n);
+    return { g, gi, rs };
+  };
+  function gamesList(list) {
+    const by = new Map();
+    for (const o of list) {
+      const x = by.get(o.g.id) || { g: o.g, n: 0, okC: 0, okA: 0, nA: 0, km: 0, lost: 0, countries: [] };
+      x.n++; x.okC += o.G.okCountry ? 1 : 0; x.km += o.G.km || 0; if (o.damage < 0) x.lost -= o.damage;
+      if (o.G.okAdmin1 != null) { x.nA++; x.okA += o.G.okAdmin1 ? 1 : 0; }
+      x.countries.push(o.country); by.set(o.g.id, x);
+    }
+    const gs = [...by.values()].sort((a, b) => b.g.started.localeCompare(a.g.started));
+    const won = gs.filter(x => x.g.won).length;
+    return `<section><h2>Games <span class="r muted">${gs.length} games, ${won} won (${pct(won, gs.length) ?? '–'} %) · newest first · click for the rounds</span></h2><div class="tw"><table>
+      <tr><th>Date</th><th>Mode</th><th>Map</th><th>Teammate</th><th>Result</th><th>Rating</th><th>Rounds</th><th>Country</th><th>Region</th><th>HP lost</th><th>Countries</th></tr>`
+      + gs.slice(0, gamesShown).map(x => { const g = x.g, dr = g.ratingAfter != null && g.ratingBefore != null ? g.ratingAfter - g.ratingBefore : null;
+        return `<tr class="grow" data-g="${g.id}" style="cursor:pointer"><td>${esc(g.started.replace('T', ' '))}</td><td>${g.mode === 'TeamDuels' ? 'Team' : 'Duel'} · ${esc(g.movement)}${g.rated ? '' : ' <span class="muted">unranked</span>'}</td>`
+          + `<td class="l muted">${esc(g.map || '')}</td><td>${g.mate ? esc(nick(g.mate)) : '<span class="muted">–</span>'}</td>`
+          + `<td class="${g.won ? 'ok' : 'ko'}">${g.won ? 'Won' : 'Lost'}</td><td class="${dr > 0 ? 'ok' : dr < 0 ? 'ko' : 'muted'}">${dr == null ? '–' : (dr > 0 ? '+' : '') + dr}</td>`
+          + `<td>${x.n}</td>${pctCell(x.okC, x.n)}${pctCell(x.okA, x.nA)}<td>${x.lost.toLocaleString('en-GB')}</td><td class="l">${x.countries.map(flag).join('')}</td></tr>`; }).join('')
+      + `</table></div>${gs.length > gamesShown ? `<p><button data-more>Show 100 more</button></p>` : ''}</section>`;
+  }
+  function gameView(id) {
+    const G = gameRounds(id);
+    if (!G) return `<section class="empty">Game not found in the imported file.</section>`;
+    const { g, gi, rs } = G, dr = g.ratingAfter != null && g.ratingBefore != null ? g.ratingAfter - g.ratingBefore : null;
+    const prev = D.games[gi - 1], next = D.games[gi + 1];
+    const gq = (x, me) => x ? `<span class="${x.okCountry ? (x.okAdmin1 ? 'ok' : 'mid') : 'ko'}">${x.okCountry ? '' : flag(x.country) + ' '}${esc(x.admin1 || x.country || '?')}</span>`
+      + `<small>${Math.round(x.km)} km · ${x.score} pts${x.teamBest ? ' · ★ team' : ''}</small>` : '<span class="muted">no guess</span>';
+    const hp = (v, c) => v == null ? '' : `${v.toLocaleString('en-GB')}<span class="hp"><i style="width:${Math.max(0, Math.min(100, v / 60))}%;background:${c}"></i></span>`;
+    let h = `<div class="gnav"><a href="#games">← All games</a>${prev ? `<a href="#g/${prev[0]}">← older</a>` : ''}${next ? `<a href="#g/${next[0]}">newer →</a>` : ''}</div>`;
+    h += `<section><h2>${esc(g.started.replace('T', ' '))} · ${g.mode === 'TeamDuels' ? 'Team Duel' : 'Duel'} · ${esc(g.movement)}${g.rated ? ' · ranked' : ''}<span class="r muted">${esc(g.map || '')}</span></h2>`
+      + `<p><b class="${g.won ? 'ok' : 'ko'}">${g.won ? 'Won' : 'Lost'}</b>${dr != null ? ` · rating ${g.ratingBefore} → ${g.ratingAfter} (<span class="${dr >= 0 ? 'ok' : 'ko'}">${dr > 0 ? '+' : ''}${dr}</span>)` : ''}`
+      + `${g.mate ? ` · with <b>${esc(nick(g.mate))}</b>` : ''} · ${rs.length} rounds</p></section>`;
+    h += `<section><h2>Rounds <span class="r muted">★ the team's guess · green right region, yellow right country, red wrong country</span></h2><div class="tw"><table class="rd">
+      <tr><th>#</th><th>Where it was</th><th>Code · language</th><th>You</th>${g.mate ? `<th>${esc(nick(g.mate))}</th>` : ''}<th>Score</th><th>Damage</th><th>HP us · them</th></tr>`
+      + rs.map(o => `<tr><td>${o.n}${o.multiplier > 1 ? `<small>×${o.multiplier}</small>` : ''}</td>`
+        + `<td class="l"><a href="#${(o.country || '').toLowerCase()}">${flag(o.country)}</a> ${esc(o.admin1 || '?')}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a></small></td>`
+        + `<td class="l">${esc(o.phone || '')}<small>${esc((o.langs || []).join(', '))}</small></td>`
+        + `<td class="l">${gq(o.meG, true)}</td>${g.mate ? `<td class="l">${gq(o.mateG)}</td>` : ''}`
+        + `<td>${o.myScore ?? '–'}<small>them ${o.oppScore ?? '–'}</small></td>`
+        + `<td class="${o.damage < 0 ? 'ko' : o.damage > 0 ? 'ok' : 'muted'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')}</td>`
+        + `<td>${hp(o.myHp, 'var(--ok)')}<small>${hp(o.oppHp, 'var(--ko)')}</small></td></tr>`).join('')
+      + `</table></div></section>`;
+    return h;
+  }
+
   function countryView(iso, all) {
     const list = all.filter(o => o.country === iso);
     const c = byCountry(list)[0];
@@ -249,6 +478,12 @@
       + (codes.length ? `<p class="muted">Area codes met (${codes.length})</p><div class="chips">${codes.slice(0, 24).map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
       + (langs.length ? `<p class="muted">Languages met</p><div class="chips">${langs.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
       + `</section></div>`;
+    // map: regions coloured by how often I find them, one dot per round, lines to the guesses on click
+    h += `<section><h2>Map <span class="r muted"><label><input type="checkbox" id="lines" ${prefs.lines ? 'checked' : ''}> all guess lines</label> · wheel / drag to zoom · click a dot</span></h2>`
+      + `<div class="wlegend"><i style="background:#d9614c"></i><i style="background:#e8995a"></i><i style="background:#e9cf6a"></i><i style="background:#9fcb7a"></i><i style="background:#5fae7e"></i><span>right region, 0 → 100 %</span>`
+      + `<b class="dot ok"></b><span>right region</span><b class="dot mid"></b><span>right country</span><b class="dot ko"></b><span>wrong country</span></div>`
+      + `<div id="mapbox"><svg id="map" data-iso="${iso}"></svg><div id="mapinfo" class="muted">Click a dot: where it was, your guess (solid) and your mate's (dashed).</div></div></section>`;
+    mapData = { iso, list, regs: reg };
     // rounds, worst first
     const rs = list.slice().sort((a, b) => (a.damage || 0) - (b.damage || 0) || b.G.km - a.G.km).slice(0, 60);
     const g = (x, me) => x ? `<span class="${x.okCountry ? (x.okAdmin1 ? 'ok' : 'mid') : 'ko'}">${x.okCountry ? '' : flag(x.country) + ' '}${esc(x.admin1 || x.country || '?')}</span> <span class="muted">${Math.round(x.km)} km${me && x.teamBest ? ' ★' : ''}</span>` : '<span class="muted">no guess</span>';
@@ -263,17 +498,47 @@
     return h;
   }
 
+  async function importText(text, quiet) {
+    const d = JSON.parse(text);
+    if (d.v !== 1 || !Array.isArray(d.rounds)) throw new Error('not a review.json from geo-review');
+    if (quiet && D && D.made === d.made) return false;            // already the latest
+    localStorage.setItem(KEY, JSON.stringify(d));
+    load(); pushAtlas(); render();
+    return true;
+  }
   $('imp').onclick = () => $('file').click();
   $('file').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    try {
-      const d = JSON.parse(await f.text());
-      if (d.v !== 1 || !Array.isArray(d.rounds)) throw new Error('not a review.json from geo-review');
-      localStorage.setItem(KEY, JSON.stringify(d));
-      load(); pushAtlas(); render();
-    } catch (err) { alert('Import failed: ' + err.message); }
+    try { await importText(await f.text()); } catch (err) { alert('Import failed: ' + err.message); }
     e.target.value = '';
   };
+  // Linked file (Edge / Chrome): pick geo-review\review.json once, the page re-reads it at each visit (File System Access API;
+  // the handle stays in this browser's IndexedDB, the browser may ask once per session to allow reading it).
+  const idb = (mode, fn) => new Promise((ok, ko) => { const r = indexedDB.open('duels', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onerror = () => ko(r.error);
+    r.onsuccess = () => { const tx = r.result.transaction('h', mode), q = fn(tx.objectStore('h')); tx.oncomplete = () => ok(q && q.result); tx.onerror = () => ko(tx.error); }; });
+  const getHandle = () => idb('readonly', st => st.get('review')).catch(() => null);
+  async function readLinked(handle, ask) {
+    let perm = await handle.queryPermission({ mode: 'read' });
+    if (perm !== 'granted' && ask) perm = await handle.requestPermission({ mode: 'read' });
+    if (perm !== 'granted') { $('reload').hidden = false; return; }
+    $('reload').hidden = true;
+    const f = await handle.getFile();
+    const changed = await importText(await f.text(), true);
+    $('sub').textContent += changed ? ' · reloaded from the linked file' : ' · linked file: up to date';
+  }
+  if ('showOpenFilePicker' in window) {
+    $('link').hidden = false;
+    $('link').onclick = async () => {
+      try {
+        const [h] = await showOpenFilePicker({ types: [{ description: 'review.json', accept: { 'application/json': ['.json'] } }] });
+        await idb('readwrite', st => st.put(h, 'review'));
+        $('link').textContent = 'Linked ✓'; await readLinked(h, true);
+      } catch (err) { if (err.name !== 'AbortError') alert('Link failed: ' + err.message); }
+    };
+    $('reload').onclick = async () => { const h = await getHandle(); if (h) readLinked(h, true).catch(err => alert(err.message)); };
+    getHandle().then(h => { if (h) { $('link').textContent = 'Linked ✓'; $('link').title = 'Linked to ' + h.name + ': click to pick another file'; return readLinked(h, false); } }).catch(() => {});
+  }
   addEventListener('hashchange', render);
   load(); render();
 })();
