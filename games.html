@@ -80,6 +80,17 @@
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .dot.ok { background: var(--ok); } .dot.mid { background: var(--mid); } .dot.ko { background: var(--ko); }
   tr.mrow { cursor: pointer; } tr.mrow:hover td { background: #16303f; }
+  .clues { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; margin: 6px 0 10px; }
+  .clue { display: flex; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 6px; background: var(--ocean); white-space: normal; text-align: left; min-width: 0; }
+  .clue img { width: 120px; height: 80px; object-fit: cover; border-radius: 5px; flex: none; cursor: zoom-in; }
+  .clue img.big { position: fixed; inset: 0; margin: auto; width: min(96vw, 900px); height: auto; max-height: 90vh; object-fit: contain; z-index: 9; cursor: zoom-out; box-shadow: 0 0 0 100vmax rgba(0,0,0,.7); }
+  .clue > div { min-width: 0; }
+  .clue b { font-size: 14px; }
+  .clue p { margin: 3px 0; font-size: 13px; }
+  .clue p b { font-size: 13px; }
+  .clue small { color: var(--muted); font-size: 12px; display: block; }
+  tr.cl td { border-top: 0; padding-top: 0; }
+  details summary { cursor: pointer; font-size: 12px; color: var(--muted); }
   @media (max-width: 720px) {
     .two { grid-template-columns: 1fr; }
     .bar { display: none; }
@@ -97,7 +108,7 @@
   <header>
     <h1>Duels review</h1>
     <span class="muted" id="sub">your Duels and Team Duels, place by place · data stays in this browser</span>
-    <span class="right"><button id="link" hidden title="Pick geo-review\review.json once: the page then reloads it by itself">Link review.json</button><button id="reload" hidden>Reload review.json</button><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
+    <span class="right"><button id="link" hidden title="Pick geo-review\review.json once: the page then reloads it by itself">Link review.json</button><button id="reload" hidden>Reload review.json</button><button id="clink" hidden title="Pick the geo-corpus folder once (on this PC only, never published): clues that would have helped, from Cartometa">Link corpus</button><label><button id="imp">Import review.json</button><input type="file" id="file" accept=".json,application/json" hidden></label>
       <a href="./">Atlas</a><a href="daily.html">Review</a><a href="confusions.html">Mix-ups</a><a href="compare.html">Compare</a><a href="quiz.html">Quiz</a></span>
   </header>
   <div id="out"></div>
@@ -120,7 +131,7 @@
 
   let D = null, RAW = null;      // RAW: review.json as made by geo-review; D: the same seen by the player chosen in "I am"
   const SHARED = 'https://tgm-hub.github.io/geo-review-data/review.json';   // public copy pushed by geo-review\review.cmd
-  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost', mate: '', lines: false, view: '' }, lsGet(PKEY, {}));
+  const prefs = Object.assign({ mode: '', rated: '', move: '', days: 0, who: 'me', sort: 'lost', mate: '', lines: false, view: '', ctype: '' }, lsGet(PKEY, {}));
   const saveP = () => { try { localStorage.setItem(PKEY, JSON.stringify(prefs)); } catch (e) {} };
 
   function load() {
@@ -315,7 +326,8 @@
       const q = (x, who) => x ? `${who}: ${x.okCountry ? '' : flag(x.country) + ' '}${esc(x.admin1 || x.country || '?')}, ${Math.round(x.km)} km${x.teamBest ? ' ★' : ''}` : '';
       $('mapinfo').innerHTML = `<b>${esc(o.admin1 || '?')}</b>${o.city ? ' · ' + esc(o.city) : ''}${o.phone ? ' · ' + esc(o.phone) : ''} · ${esc(o.g.started.slice(0, 10))} r${o.n}`
         + ` · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a><br>${[q(o.meG, 'You'), o.g.mate ? q(o.mateG, esc(nick(o.g.mate))) : ''].filter(Boolean).join(' · ')}`
-        + ` · <span class="${o.damage < 0 ? 'ko' : 'ok'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')} HP</span>`;
+        + ` · <span class="${o.damage < 0 ? 'ko' : 'ok'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')} HP</span>` + mapClues(o);
+      fillThumbs();
     });
     $('lines').onchange = e => { prefs.lines = e.target.checked; saveP(); showLines(null); apply(); };
     if (window.__mapResize) removeEventListener('resize', window.__mapResize);
@@ -359,6 +371,7 @@
     const bk = $('back'); if (bk) bk.onclick = () => { history.pushState(null, '', location.pathname); render(); };
     $('out').querySelectorAll('tr.mrow').forEach(tr => tr.onclick = () => { prefs.mate = prefs.mate === tr.dataset.m ? '' : tr.dataset.m; saveP(); render(); });
     if ($('map')) drawMap();
+    fillThumbs();
   }
 
   function kpis(list) {
@@ -467,7 +480,7 @@
         + `<td class="l">${gq(o.meG, true)}</td>${g.mate ? `<td class="l">${gq(o.mateG)}</td>` : ''}`
         + `<td>${o.myScore ?? '–'}<small>them ${o.oppScore ?? '–'}</small></td>`
         + `<td class="${o.damage < 0 ? 'ko' : o.damage > 0 ? 'ok' : 'muted'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')}</td>`
-        + `<td>${hp(o.myHp, 'var(--ok)')}<small>${hp(o.oppHp, 'var(--ko)')}</small></td></tr>`).join('')
+        + `<td>${hp(o.myHp, 'var(--ok)')}<small>${hp(o.oppHp, 'var(--ko)')}</small></td></tr>` + clueRow(o, g.mate ? 7 : 6)).join('')
       + `</table></div></section>`;
     return h;
   }
@@ -502,6 +515,7 @@
       + (codes.length ? `<p class="muted">Area codes met (${codes.length})</p><div class="chips">${codes.slice(0, 24).map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
       + (langs.length ? `<p class="muted">Languages met</p><div class="chips">${langs.map(x => `<span>${esc(x)}</span>`).join('')}</div>` : '')
       + `</section></div>`;
+    h += lookAt(list, iso);
     // map: regions coloured by how often I find them, one dot per round, lines to the guesses on click
     h += `<section><h2>Map <span class="r muted"><label><input type="checkbox" id="lines" ${prefs.lines ? 'checked' : ''}> all guess lines</label> · wheel / drag to zoom · click a dot</span></h2>`
       + `<div class="wlegend"><i style="background:#d9614c"></i><i style="background:#e8995a"></i><i style="background:#e9cf6a"></i><i style="background:#9fcb7a"></i><i style="background:#5fae7e"></i><span>right region, 0 → 100 %</span>`
@@ -566,6 +580,127 @@
   // Shared copy on GitHub (TGM-hub/geo-review-data, Pages): read at each visit, kept only if newer (works on the phone too)
   fetch(SHARED + '?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.text() : null)
     .then(t => t ? importText(t, true) : false).then(ch => { if (ch) $('sub').textContent += ' · updated from GitHub'; }).catch(() => {});
+
+  // ---------------------------------------------------------------- corpus (geo-corpus on TGM's PC): what to look at
+  // Third-party content (Cartometa, mostly Plonk It, CC BY-NC-SA 4.0): read from the PC through a folder handle
+  // (File System Access), never copied into this page, localStorage or GitHub. Without the link nothing shows.
+  let CORPUS = null, CDIR = null;
+  const IMGURL = new Map();
+  const safeUrl = u => /^https?:\/\//i.test(u || '') ? u : '#';
+  async function corpusFile(dir, parts) {
+    let d = dir;
+    for (const x of parts.slice(0, -1)) d = await d.getDirectoryHandle(x);
+    return (await d.getFileHandle(parts[parts.length - 1])).getFile();
+  }
+  async function corpusRoot(dir) {                       // geo-corpus or geo-corpus\data
+    for (const pre of [['data'], []]) {
+      try { let d = dir; for (const x of pre) d = await d.getDirectoryHandle(x); await corpusFile(d, ['review', 'metas.json']); return d; } catch (e) {}
+    }
+    return null;
+  }
+  async function readCorpus(handle, ask) {
+    let perm = await handle.queryPermission({ mode: 'read' });
+    if (perm !== 'granted' && ask) perm = await handle.requestPermission({ mode: 'read' });
+    if (perm !== 'granted') { $('clink').textContent = 'Allow corpus'; return; }
+    const root = await corpusRoot(handle);
+    if (!root) { alert(`No review\\metas.json in "${handle.name}": run geo-corpus\\review.cmd, then pick the geo-corpus folder.`); return; }
+    const d = JSON.parse(await (await corpusFile(root, ['review', 'metas.json'])).text());
+    if (d.v !== 1 || !d.clues || !d.rounds) throw new Error('not a metas.json from geo-corpus');
+    CORPUS = d; CDIR = root;
+    $('clink').textContent = 'Corpus ✓';
+    $('clink').title = `${handle.name}: ${Object.keys(d.clues).length} clues over ${Object.keys(d.rounds).length} rounds, made ${d.made}. Click to pick another folder.`;
+    render();
+  }
+  const clue = id => { const c = CORPUS && CORPUS.clues[id]; if (!c) return null; const o = { id }; CORPUS.clueCols.forEach((k, i) => { o[k] = c[i]; }); return o; };
+  // [covering clues, decisive clues for guess g] of a round; decisive = covers where it was, not where g landed
+  function cluesOf(o, g) {
+    const r = CORPUS && CORPUS.rounds[o.g.id + ':' + o.n];
+    if (!r) return null;
+    const swap = D !== RAW;                              // "I am" a teammate: his guesses are "me"
+    g = g || o.G;
+    return { cov: r[0], dec: g && g === o.meG ? r[swap ? 2 : 1] : g && g === o.mateG ? r[swap ? 1 : 2] : [] };
+  }
+  function clueCard(c, extra) {
+    const t = (c.title || '').replace(/[.…]+$/, '');
+    const text = c.text && c.text !== c.title ? c.text : '';
+    const apps = (A.apps || []).filter(a => a.status !== 'archived' && a.deeplink && c.type !== 'other' && (a.types || []).includes(c.type) && (a.countries || []).includes(c.cc));
+    // Cartometa titles are often the first words of the description: then one paragraph, title in bold
+    const body = text && text.startsWith(t) ? `<p><b>${esc(t)}</b>${esc(text.slice(t.length))}</p>` : `<b>${esc(t)}</b>${text ? `<p>${esc(text)}</p>` : ''}`;
+    return `<div class="clue">${c.thumb ? `<img data-th="${esc(c.thumb)}" alt="" loading="lazy">` : ''}<div>${body}`
+      + `<small>${esc(c.type)}${c.subtype && c.subtype !== c.type ? ' · ' + esc(c.subtype) : ''} · ${esc(c.level || '?')} · ${esc(c.difficulty || '?')}${extra ? ' · ' + extra : ''}`
+      + ` · <a href="${esc(safeUrl(c.source_url))}" target="_blank" rel="noopener">source ↗</a>`
+      + apps.map(a => ` · <a href="${esc(appLink(a, c.cc))}" target="_blank" rel="noopener">${esc(a.name.en)} ↗</a>`).join('') + `</small></div></div>`;
+  }
+  // country page: what said "here" in the rounds I missed, most HP lost first
+  const DIFF = { beginner: 0, intermediate: 1, pro: 2 };
+  function lookAt(list, iso) {
+    if (!CORPUS) return '';
+    const agg = {};
+    let nr = 0;
+    for (const o of list) {
+      const k = cluesOf(o);
+      if (!k || !k.dec.length) continue;
+      nr++;
+      const lost = o.damage < 0 ? -o.damage : 0, side = o.G.okCountry ? 'r' : 'c';
+      for (const id of k.dec) {
+        const c = clue(id);
+        if (!c || (side === 'r' && c.level === 'national')) continue;
+        const a = agg[side + id] = agg[side + id] || { c, side, n: 0, lost: 0 };
+        a.n++; a.lost += lost;
+      }
+    }
+    const all = Object.values(agg), types = [...new Set(all.map(a => a.c.type))].sort();
+    const tf = types.includes(prefs.ctype) ? prefs.ctype : '';
+    const block = (side, title) => {
+      const xs = all.filter(a => a.side === side && (!tf || a.c.type === tf)).sort((a, b) => b.lost - a.lost || b.n - a.n || (DIFF[a.c.difficulty] ?? 3) - (DIFF[b.c.difficulty] ?? 3)).slice(0, 12);
+      return xs.length ? `<p class="muted">${title}</p><div class="clues">${xs.map(a => clueCard(a.c, `${a.n} round${a.n > 1 ? 's' : ''}, ${a.lost.toLocaleString('en-GB')} HP`)).join('')}</div>` : '';
+    };
+    return `<section><h2>What to look at <span class="r muted">clues that covered where it was but not your guess · most HP lost first · Cartometa / Plonk It, CC BY-NC-SA 4.0 · this PC only</span></h2>`
+      + (nr ? `<div class="filters" style="margin-bottom:6px">${filt('Type', 'ctype', [['', 'All'], ...types.map(t => [t, esc(t)])])}</div>`
+        + block('r', `Right country, wrong region (${list.filter(o => o.G.okCountry && !o.G.okAdmin1).length} rounds)`)
+        + block('c', `Wrong country: what said ${esc(nameOf(iso))}`)
+        : `<p class="muted">No missed round with a clue in ${esc(nameOf(iso))} with these filters${Object.keys(CORPUS.rounds).length ? '' : ''}.</p>`) + `</section>`;
+  }
+  // game page: one collapsible line under each round
+  function clueRow(o, span) {
+    const k = cluesOf(o, o.meG);
+    if (!k || !k.cov.length) return '';
+    const dec = k.dec.map(clue).filter(Boolean), cov = k.cov.map(clue).filter(c => c && c.level !== 'national');
+    const xs = (dec.length ? dec : cov).slice(0, 6);
+    const lbl = dec.length ? `${dec.length} clue${dec.length > 1 ? 's' : ''} said here, not where you guessed` : `${k.cov.length} clues cover this spot`;
+    return `<tr class="cl"><td></td><td class="l" colspan="${span}"><details><summary>${lbl}</summary><div class="clues">${xs.map(c => clueCard(c)).join('')}</div></details></td></tr>`;
+  }
+  // map click (country page): the 3 most specific decisive clues
+  function mapClues(o) {
+    const k = cluesOf(o);
+    if (!k || !k.dec.length) return '';
+    return `<br>Look at: ${k.dec.slice(0, 3).map(clue).filter(Boolean).map(c => `<a href="${esc(safeUrl(c.source_url))}" target="_blank" rel="noopener">${esc((c.title || '').slice(0, 60))}</a>`).join(' · ')}`;
+  }
+  async function fillThumbs() {
+    if (!CDIR) return;
+    for (const img of document.querySelectorAll('img[data-th]:not([src])')) {
+      const p = img.dataset.th;
+      let u = IMGURL.get(p);
+      if (u === undefined) {
+        try { u = URL.createObjectURL(await corpusFile(CDIR, ['cartometa', 'img', ...p.split('/')])); } catch (e) { u = null; }
+        IMGURL.set(p, u);
+      }
+      if (u) { img.src = u; img.onclick = () => img.classList.toggle('big'); } else img.remove();
+    }
+  }
+  if ('showDirectoryPicker' in window) {
+    $('clink').hidden = false;
+    $('clink').onclick = async () => {
+      try {
+        const cur = await idb('readonly', st => st.get('corpus')).catch(() => null);
+        if (cur && !CORPUS) { await readCorpus(cur, true); if (CORPUS) return; }
+        const h = await showDirectoryPicker({ id: 'geo-corpus', mode: 'read' });
+        idb('readwrite', st => st.put(h, 'corpus')).catch(() => {});   // remembered for the next visits
+        await readCorpus(h, true);
+      } catch (err) { if (err.name !== 'AbortError') alert('Corpus link failed: ' + err.message); }
+    };
+    idb('readonly', st => st.get('corpus')).then(h => h && readCorpus(h, false)).catch(() => {});
+  }
   addEventListener('hashchange', render);
   load(); render();
 })();
