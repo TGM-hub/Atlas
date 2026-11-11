@@ -10,12 +10,12 @@
   "from": "Plonk It Indonesia, rephrased; background: Natural Earth (public domain)",
   "licence": "own work"
  },
- "ID Indonesia/other/Kabupaten/": {
+ "ID Indonesia/regions/Kabupaten/": {
   "by": "Made for the Atlas (tools/cards/kabupaten.py)",
   "from": "borders: geoBoundaries ADM2; provinces and background: Natural Earth (public domain)",
   "licence": "CC BY (geoBoundaries)"
  },
- "ID Indonesia/other/Provinces.png": {
+ "ID Indonesia/regions/Provinces.png": {
   "by": "Made for the Atlas (tools/cards/indonesia_admin.py)",
   "from": "borders: geoBoundaries (BPS, OCHA); capitals: Kepmendagri 2025 (cahyadsn/wilayah); background: Natural Earth (public domain)",
   "licence": "CC BY 3.0 IGO (geoBoundaries), MIT"
@@ -35,7 +35,7 @@
   "from": "codes: Wikipedia (plates, provinces); clues: Plonk It and geometas, rephrased; background: Natural Earth (public domain)",
   "licence": "CC BY-SA (Wikipedia)"
  },
- "VN Vietnam/other/Provinces.png": {
+ "VN Vietnam/regions/Provinces.png": {
   "by": "Made for the Atlas (tools/cards/vietnam_provinces.py)",
   "from": "provinces: Tỉnh Việt Nam trainer (TGM-hub), Wikipedia; 2025 merger: resolution 202/2025/QH15; background: Natural Earth (public domain)",
   "licence": "CC BY-SA (Wikipedia)"

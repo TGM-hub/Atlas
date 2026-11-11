@@ -32,7 +32,8 @@ au bon endroit, nettoie le titre et relance le build.
 2. `build.cmd` (ou `publish.cmd` si tu partages l'atlas).
 3. F5 dans l'atlas.
 
-Types : landscape, language, architecture, plate, bollard, pole, sign, road-lines, phone, car, soil, flag, other.
+Types : landscape, language, architecture, plate, bollard, pole, sign, road-lines, phone, regions, car, soil, flag, other.
+`regions` : cartes de divisions administratives (provinces, kabupaten, régions) ; `other` : ce qui ne rentre nulle part.
 Nouveau type ou alias de recherche : `config.json`, puis relance `setup-atlas.ps1`.
 
 ## Titres des fiches
@@ -63,9 +64,19 @@ Toutes reliées par la ligne de liens en haut à droite (Atlas · Review · Duel
 ## Outils
 `build.cmd` (fiches, `data.js`, `tgm-core.js` recopié dans les trainers), `publish-all.cmd` (tests de fumée `tools\smoke.py` puis publication repo par repo), `check-links.cmd`, `tools\pwa.py` (hors ligne + installation).
 
+## Carte
+Couleurs (légende en bas à gauche de la carte) : jaune = 2 fiches ou plus, jaune sourd = 1 fiche, bleu sarcelle = pas de fiche mais un trainer couvre le pays, terre = rien. Avec un type choisi ou Weak spots, la légende change avec les couleurs.
+Boutons + / − / cadrer en bas à droite (touches `+` et `-`) ; zoom limité à ×12. Un pays ouvert par la recherche, un lien ou l'adresse est cadré avec ses voisins ; un pays cliqué sur la carte ne la déplace pas.
+Le relief (`relief.webp`) se charge après la carte, et pas du tout sur un écran de téléphone.
+Échap ferme une couche à la fois (planche, pays, puis filtre de type). Le bouton Retour du navigateur revient au pays précédent.
+
 ## Recherche
 Tape au clavier n'importe quand. Pays en anglais, en français ou code ISO ; types en anglais ou en français
 (« car paraguay », « voiture paraguay », « phone br », « plaque pologne »). Entrée ouvre la fiche.
+La recherche trouve aussi les trainers (« bollard france », « sign reader ») et les liens externes d'un pays (« plonk jp », « street view br », « relief no ») ; ils s'ouvrent dans un nouvel onglet (↗). Un nom de pays seul ouvre sa page. Champ vide : les 5 derniers pays ouverts.
+
+## Tests
+`py tools\test_atlas_ui.py` (Playwright, comme `smoke.py`) : en-tête du panneau, couverture et légende, zoom et cadrage, Retour et Échap, recherche, relief, type Regions. `py tools\test_atlas_ui.py t_search_robust` pour un seul test.
 
 ## Partage (GitHub Pages)
 `images\` n'est pas publié : le build en garde une copie dans `thumbs\full\`.

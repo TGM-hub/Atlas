@@ -109,6 +109,22 @@
       ]
     },
     {
+      "key": "regions",
+      "label": "Regions",
+      "aliases": [
+        "region",
+        "régions",
+        "province",
+        "provinces",
+        "admin",
+        "subdivision",
+        "subdivisions",
+        "oblast",
+        "prefecture",
+        "préfecture"
+      ]
+    },
+    {
       "key": "car",
       "label": "Google car",
       "aliases": [

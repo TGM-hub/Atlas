@@ -475,7 +475,7 @@
     h += `<section><h2>Rounds <span class="r muted">★ the team's guess · green right region, yellow right country, red wrong country</span></h2><div class="tw"><table class="rd">
       <tr><th>#</th><th>Where it was</th><th>Code · language</th><th>You</th>${g.mate ? `<th>${esc(nick(g.mate))}</th>` : ''}<th>Score</th><th>Damage</th><th>HP us · them</th></tr>`
       + rs.map(o => `<tr><td>${o.n}${o.multiplier > 1 ? `<small>×${o.multiplier}</small>` : ''}</td>`
-        + `<td class="l"><a href="#${(o.country || '').toLowerCase()}">${flag(o.country)}</a> ${esc(o.admin1 || '?')}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a></small></td>`
+        + `<td class="l"><a href="#${(o.country || '').toLowerCase()}">${flag(o.country)}</a> ${esc(o.admin1 || '?')}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a>${coachLink(o)}</small></td>`
         + `<td class="l">${esc(o.phone || '')}<small>${esc((o.langs || []).join(', '))}</small></td>`
         + `<td class="l">${gq(o.meG, true)}</td>${g.mate ? `<td class="l">${gq(o.mateG)}</td>` : ''}`
         + `<td>${o.myScore ?? '–'}<small>them ${o.oppScore ?? '–'}</small></td>`
@@ -528,7 +528,7 @@
     h += `<section><h2>Rounds <span class="r muted">worst first (HP, then distance) · ★ team's guess · green right region, yellow right country</span></h2><div class="tw"><table class="rd">
       <tr><th>Game</th><th>Where it was</th><th>Code · language</th><th>You</th><th>Mate</th><th>HP</th></tr>`
       + rs.map(o => `<tr><td>${esc(o.g.started.slice(0, 10))}<small>${esc(o.g.mode === 'TeamDuels' ? 'Team' : 'Duel')} · ${esc(o.g.movement)} · r${o.n}</small></td>`
-        + `<td class="l">${esc(o.admin1 || '?')}${o.region ? ` <span class="muted">(${esc(o.region)})</span>` : ''}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a></small></td>`
+        + `<td class="l">${esc(o.admin1 || '?')}${o.region ? ` <span class="muted">(${esc(o.region)})</span>` : ''}<small>${esc(o.city || '')}${o.kabupaten ? ' · ' + esc(o.kabupaten) : ''} · <a href="${svLink(o)}" target="_blank" rel="noopener">Street View ↗</a>${coachLink(o)}</small></td>`
         + `<td class="l">${esc(o.phone || '')}<small>${esc((o.langs || []).join(', '))}</small></td>`
         + `<td class="l">${g(o.meG, true)}</td><td class="l">${o.g.mode === 'TeamDuels' ? g(o.mateG) : ''}</td>`
         + `<td class="${o.damage < 0 ? 'ko' : o.damage > 0 ? 'ok' : 'muted'}">${o.damage > 0 ? '+' : ''}${(o.damage || 0).toLocaleString('en-GB')}</td></tr>`).join('')
@@ -598,15 +598,21 @@
     }
     return null;
   }
+  const cdiag = msg => { console.info('[corpus]', msg); $('clink').title = 'Corpus: ' + msg; };
+  const cfail = err => { console.error('[corpus]', err); $('sub').textContent += ' · corpus: ' + (err && err.message || err); $('clink').textContent = 'Corpus ✗'; };
   async function readCorpus(handle, ask) {
+    cdiag('handle ' + handle.name);
     let perm = await handle.queryPermission({ mode: 'read' });
+    cdiag('permission ' + perm);
     if (perm !== 'granted' && ask) perm = await handle.requestPermission({ mode: 'read' });
     if (perm !== 'granted') { $('clink').textContent = 'Allow corpus'; return; }
     const root = await corpusRoot(handle);
+    cdiag(root ? 'metas.json found in ' + root.name : 'metas.json not found');
     if (!root) { alert(`No review\\metas.json in "${handle.name}": run geo-corpus\\review.cmd, then pick the geo-corpus folder.`); return; }
     const d = JSON.parse(await (await corpusFile(root, ['review', 'metas.json'])).text());
     if (d.v !== 1 || !d.clues || !d.rounds) throw new Error('not a metas.json from geo-corpus');
     CORPUS = d; CDIR = root;
+    cdiag(`${Object.keys(d.clues).length} clues, ${Object.keys(d.rounds).length} rounds`);
     $('clink').textContent = 'Corpus ✓';
     $('clink').title = `${handle.name}: ${Object.keys(d.clues).length} clues over ${Object.keys(d.rounds).length} rounds, made ${d.made}. Click to pick another folder.`;
     render();
@@ -670,6 +676,8 @@
     const lbl = dec.length ? `${dec.length} clue${dec.length > 1 ? 's' : ''} said here, not where you guessed` : `${k.cov.length} clues cover this spot`;
     return `<tr class="cl"><td></td><td class="l" colspan="${span}"><details><summary>${lbl}</summary><div class="clues">${xs.map(c => clueCard(c)).join('')}</div></details></td></tr>`;
   }
+  // local coach (geo-corpus coach.cmd serve, this PC only): shown only when the corpus is linked, so never for other viewers
+  const coachLink = o => CORPUS ? ` · <a href="http://127.0.0.1:8765/?round=${encodeURIComponent(o.g.id + ':' + o.n)}&who=${D !== RAW ? 'mate' : 'me'}" target="geocoach" rel="noopener" title="Needs geo-corpus coach.cmd serve">Coach ↗</a>` : '';
   // map click (country page): the 3 most specific decisive clues
   function mapClues(o) {
     const k = cluesOf(o);
@@ -697,9 +705,9 @@
         const h = await showDirectoryPicker({ id: 'geo-corpus', mode: 'read' });
         idb('readwrite', st => st.put(h, 'corpus')).catch(() => {});   // remembered for the next visits
         await readCorpus(h, true);
-      } catch (err) { if (err.name !== 'AbortError') alert('Corpus link failed: ' + err.message); }
+      } catch (err) { if (err.name !== 'AbortError') cfail(err); }
     };
-    idb('readonly', st => st.get('corpus')).then(h => h && readCorpus(h, false)).catch(() => {});
+    idb('readonly', st => st.get('corpus')).then(h => h ? readCorpus(h, false) : cdiag('not linked yet')).catch(cfail);
   }
   addEventListener('hashchange', render);
   load(); render();

@@ -155,7 +155,7 @@
         "VN"
       ],
       "types": [
-        "other"
+        "regions"
       ],
       "deeplink": "https://tgm-hub.github.io/vietnam-province-guesser/#{iso}"
     },
@@ -174,7 +174,7 @@
         "ID"
       ],
       "types": [
-        "other",
+        "regions",
         "plate",
         "phone"
       ],

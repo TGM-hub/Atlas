@@ -41,7 +41,7 @@ APPS = {
     "Atlas": {"dir": ATLAS, "pages": [
         {"page": "index.html", "links": [["#fr", "document.querySelector('#panel h1')?.textContent.trim() === 'France'"],
                                          ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#explore/ua'))"],
-                                         ["", "(() => { document.getElementById('weakToggle').click(); const ok = document.getElementById('weakToggle').classList.contains('on') && !!document.querySelector('#panel .wlegend'); document.getElementById('weakToggle').click(); return ok; })()"]]},
+                                         ["", "(() => { document.getElementById('weakToggle').click(); const ok = document.getElementById('weakToggle').classList.contains('on') && !!document.querySelector('#legend .wlegend'); document.getElementById('weakToggle').click(); return ok; })()"]]},
         {"page": "daily.html", "links": [["", "document.querySelectorAll('#perApp tr').length >= 9"]]},
         {"page": "games.html", "links": [["", "!!document.getElementById('imp') && !!document.querySelector('#out section')"]]},
         {"page": "quiz.html", "play": "async () => { document.getElementById('flip').click(); document.querySelector('#acts button[data-r=\"2\"]').click(); }",

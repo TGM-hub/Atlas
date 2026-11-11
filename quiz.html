@@ -86,6 +86,24 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const T = window.TGM, A = window.ATLAS || { types: [], cards: [], clusters: {} };
+  // Fiches passées de other/ à regions/ (2026-11) : la progression du quiz et le choix « sombre » suivent leur nouvel identifiant
+  (() => {
+    const moved = ['ID Indonesia/other/Kabupaten/', 'ID Indonesia/other/Provinces.png', 'VN Vietnam/other/Provinces.png', 'PH Philippines/other/Régions'];
+    for (const key of ['atlas.quiz', 'atlas.inv']) {
+      try {
+        const o = JSON.parse(localStorage.getItem(key));
+        if (!o || typeof o !== 'object') continue;
+        let changed = false;
+        for (const k of Object.keys(o)) {
+          if (!moved.some(m => k.startsWith(m))) continue;
+          const n = k.replace('/other/', '/regions/');
+          if (!(n in o)) o[n] = o[k];
+          delete o[k]; changed = true;
+        }
+        if (changed) localStorage.setItem(key, JSON.stringify(o));
+      } catch (e) {}
+    }
+  })();
   const KEY = 'atlas.quiz', PKEY = 'atlas.quizPrefs';
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };

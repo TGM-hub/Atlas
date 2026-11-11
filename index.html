@@ -8,8 +8,8 @@
 <style>
   :root {
     --ocean: #12283a;
-    --land: #264457;
-    --land-hover: #35596f;
+    --land: #2b4c60;
+    --land-hover: #3a6076;
     --sign: #f2c94c;
     --sign-soft: #b8974a;
     --sea-glass: #7cc7b4;
@@ -19,8 +19,6 @@
     --panel: #0e2130;
     --inv-bg: #1a1a1a;
     --panel-w: clamp(340px, 28vw, 520px);
-    --gutter-left: 0px;
-    --gutter-bottom: 0px;
     --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
@@ -34,7 +32,7 @@
     display: grid;
     grid-template-columns: 1fr var(--panel-w);
     grid-template-rows: auto 1fr;
-    padding: 16px 20px calc(16px + var(--gutter-bottom)) calc(20px + var(--gutter-left));
+    padding: 16px 20px;
     gap: 14px 20px;
   }
   #app.board-mode #mapwrap, #app.board-mode #panel { display: none; }
@@ -73,33 +71,48 @@
   #map { transform-origin: 0 0; will-change: transform; }
   #map .c1 { fill: var(--sign-soft); }
   #map .c2 { fill: var(--sign); }
+  #map .t1 { fill: #4f7f8f; }   /* no card, but a trainer covers the country */
   /* Weak spots: colour = your accuracy across trainers (tgm.stats), grey = not enough answers */
   #map .w0 { fill: #d9614c; } #map .w1 { fill: #e8995a; } #map .w2 { fill: #e9cf6a; } #map .w3 { fill: #9fcb7a; } #map .w4 { fill: #5fae7e; }
   #map .wmix { stroke: #ff5fa2; stroke-width: calc(var(--sw, .6) * 2.4); }
   #map .hover { fill: var(--land-hover); }
   #map .c1.hover, #map .c2.hover { fill: #ffe08a; }
+  #map .t1.hover { fill: #6a9bab; }
   #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
   #map .sel { fill: #fff4cc; stroke: #fff; stroke-width: 1.8; }
   #map circle { stroke-width: calc(var(--sw, .6) * 1.6); }
-  #map .relief { pointer-events: none; opacity: .55; }
+  #map .relief { pointer-events: none; opacity: 0; transition: opacity .3s; }
+  #map .relief.in { opacity: .55; }
   #tip {
     position: absolute; pointer-events: none; padding: 5px 9px; border-radius: 3px;
     background: var(--ink); color: #13232e; font-size: 14px; white-space: nowrap;
     transform: translate(12px, 12px); display: none;
   }
   #tip span { color: #5a6f7c; margin-left: 6px; }
+  #legend { position: absolute; left: 12px; bottom: 12px; max-width: 270px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+    border: 1.5px solid var(--line); border-radius: 4px; background: rgba(14, 33, 48, .92); font-size: 13px; pointer-events: none; }
+  #legend b { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+  #legend > span { display: flex; align-items: center; gap: 7px; }
+  #legend > span i { width: 16px; height: 10px; border-radius: 2px; flex: none; }
+  #legend .wlegend { margin: 0; color: var(--ink); }
   .ghost { padding: 6px 10px; font-size: 13px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--muted); background: var(--ocean); }
   .ghost:hover { color: var(--ink); border-color: var(--ink); }
-  #recenter { position: absolute; right: 12px; bottom: 12px; }
+  #zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; border: 1.5px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel); }
+  #zoom button { width: 32px; height: 32px; display: grid; place-items: center; font-size: 19px; line-height: 1; color: var(--ink); border-bottom: 1px solid var(--line); }
+  #zoom button:last-child { border-bottom: 0; }
+  #zoom button:hover { background: #16303f; color: var(--sign); }
+  @media (pointer: coarse) { #zoom button { width: 42px; height: 42px; } }
 
   /* --- Panneau et planche --- */
   #panel, #board { min-height: 0; overflow-y: auto; background: var(--panel); border-radius: 6px; scrollbar-width: thin; scrollbar-color: #33505f transparent; }
   #panel { padding: 22px 22px 28px; }
   #board { grid-column: 1 / -1; padding: 24px 28px 32px; }
-  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
-  .head h1 { margin: 0; font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -.01em; }
+  .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .head > div:first-child { flex: 1 1 12ch; min-width: 0; }
+  .head h1 { margin: 0; font-size: clamp(26px, 2.4vw, 40px); font-weight: 700; line-height: 1; letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .head .facts { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
   .head .iso { display: inline-block; margin-top: 8px; padding: 2px 7px; border: 1.5px solid var(--muted); border-radius: 3px; font-size: 13px; color: var(--muted); }
-  .head .actions { display: flex; gap: 8px; align-items: center; }
+  .head .actions { display: flex; gap: 8px; align-items: center; flex: none; margin-left: auto; }
   .close { font-size: 26px; line-height: 1; color: var(--muted); padding: 0 4px; }
   .close:hover { color: var(--ink); }
   h2 { font-size: 17px; font-weight: 600; margin: 22px 0 10px; color: var(--sign); }
@@ -192,11 +205,11 @@
   /* --- Visionneuse --- */
   #lightbox { position: fixed; inset: 0; background: rgba(6, 16, 24, .95); display: none; z-index: 10; }
   #lightbox.open { display: block; }
-  #stage { position: absolute; inset: 0 0 var(--gutter-bottom) var(--gutter-left); overflow: hidden; cursor: grab; touch-action: none; }
+  #stage { position: absolute; inset: 0; overflow: hidden; cursor: grab; touch-action: none; }
   #stage.dragging { cursor: grabbing; }
   #stage img { position: absolute; left: 0; top: 0; transform-origin: 0 0; user-select: none; -webkit-user-drag: none; background: #fff; max-width: none; }
   #lbbar {
-    position: absolute; left: var(--gutter-left); right: 0; bottom: var(--gutter-bottom);
+    position: absolute; left: 0; right: 0; bottom: 0;
     display: flex; align-items: center; gap: 10px; padding: 12px 20px;
     background: linear-gradient(transparent, rgba(6,16,24,.92));
   }
@@ -227,12 +240,15 @@
   .pr .txt small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
   .pr .kind { color: var(--muted); font-size: 12px; }
   .pr.active { background: #1e3d4f; box-shadow: inset 3px 0 0 var(--sign); }
+  .pgrp { padding: 10px 20px 3px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .pr .ico.go { border-style: solid; border-color: #4f7f8f; background: rgba(79, 127, 143, .22); color: var(--ink); font-size: 17px; }
+  .pr .ico.ext { color: var(--ink); font-size: 17px; }
   .pnone { padding: 18px 20px; color: var(--muted); font-size: 15px; }
   #phelp { padding: 8px 20px; font-size: 12px; color: var(--muted); border-top: 1.5px solid var(--line); }
 
   /* --- Bande de vignettes dans la visionneuse --- */
   #strip {
-    position: absolute; left: var(--gutter-left); right: 0; bottom: calc(var(--gutter-bottom) + 58px);
+    position: absolute; left: 0; right: 0; bottom: 58px;
     display: flex; gap: 8px; justify-content: center; padding: 6px 20px; overflow-x: auto;
   }
   #strip button { flex: none; padding: 0; border: 2px solid transparent; border-radius: 4px; overflow: hidden; opacity: .6; background: #fff; }
@@ -249,7 +265,7 @@
   /* --- Téléphone : en-tête compact (☰), types en bande défilante, carte puis panneau dans le flux de la page --- */
   @media (max-width: 700px) {
     html, body { height: auto; overflow: auto; }
-    #app { display: block; height: auto; padding: 10px 12px calc(20px + var(--gutter-bottom)); }
+    #app { display: block; height: auto; padding: 10px 12px 20px; }
     header { flex-wrap: nowrap; gap: 6px; position: relative; margin-bottom: 8px; }
     #home { font-size: 19px; padding-right: 4px; }
     #searchBtn { min-width: 0; flex: 1; padding: 7px 10px; }
@@ -265,7 +281,11 @@
     #chipsRow::-webkit-scrollbar { display: none; }
     #chipsRow .chip { flex: none; padding: 5px 10px; font-size: 14px; }
     #mapwrap { height: min(46vh, 58vw); min-height: 200px; margin-bottom: 10px; }
-    #recenter { right: 8px; bottom: 8px; padding: 4px 8px; font-size: 13px; }
+    #zoom { right: 8px; bottom: 8px; }
+    #legend { left: 6px; bottom: 6px; right: 62px; max-width: none; padding: 4px 7px; font-size: 11px; flex-direction: row; flex-wrap: wrap; gap: 2px 9px; }
+    #legend b { display: none; }
+    #legend > span { gap: 4px; }
+    #legend > span i { width: 10px; }
     #panel, #board { overflow: visible; }
     #panel { padding: 16px 14px 22px; }
     #board { padding: 16px 14px 24px; }
@@ -274,6 +294,7 @@
     #pinput { font-size: 18px; padding: 12px 14px; }
     #presults { max-height: 70vh; }
     .pr { padding: 8px 12px; }
+    .pgrp { padding: 8px 12px 2px; }
     .pr img, .pr .ico { width: 56px; height: 38px; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -303,7 +324,8 @@
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="World map"></svg>
     <div id="tip"></div>
-    <button id="recenter" class="ghost">Recenter</button>
+    <div id="legend"></div>
+    <div id="zoom"><button id="zoomIn" aria-label="Zoom in" title="Zoom in (+)">+</button><button id="zoomOut" aria-label="Zoom out" title="Zoom out (−)">−</button><button id="fit" aria-label="Fit" title="Fit the selected country, or the whole world"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
   </div>
   <aside id="panel"></aside>
   <section id="board"></section>
@@ -311,9 +333,9 @@
 
 <div id="palette" role="dialog" aria-modal="true">
   <div id="pbox">
-    <input id="pinput" type="text" placeholder="phone br, plate poland, car paraguay…" autocomplete="off" spellcheck="false">
+    <input id="pinput" type="text" placeholder="Country, clue or trainer…" autocomplete="off" spellcheck="false">
     <div id="presults" role="listbox"></div>
-    <div id="phelp"><kbd>↑</kbd> <kbd>↓</kbd> pick, <kbd>Enter</kbd> open, <kbd>Esc</kbd> close</div>
+    <div id="phelp"><kbd>↑</kbd> <kbd>↓</kbd> pick, <kbd>Enter</kbd> open, <kbd>Esc</kbd> close · try “phone br”, “bollard france”, “plonk jp”</div>
   </div>
 </div>
 
@@ -345,7 +367,25 @@
   const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const $ = id => document.getElementById(id);
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const TOUCH = matchMedia('(pointer: coarse)').matches;
+
+  // Fiches passées de other/ à regions/ (2026-11) : la progression du quiz et le choix « sombre » suivent leur nouvel identifiant
+  (() => {
+    const moved = ['ID Indonesia/other/Kabupaten/', 'ID Indonesia/other/Provinces.png', 'VN Vietnam/other/Provinces.png', 'PH Philippines/other/Régions'];
+    for (const key of ['atlas.quiz', 'atlas.inv']) {
+      try {
+        const o = JSON.parse(localStorage.getItem(key));
+        if (!o || typeof o !== 'object') continue;
+        let changed = false;
+        for (const k of Object.keys(o)) {
+          if (!moved.some(m => k.startsWith(m))) continue;
+          const n = k.replace('/other/', '/regions/');
+          if (!(n in o)) o[n] = o[k];
+          delete o[k]; changed = true;
+        }
+        if (changed) localStorage.setItem(key, JSON.stringify(o));
+      } catch (e) {}
+    }
+  })();
 
   // ---------- Préférences locales ----------
   const store = {
@@ -357,7 +397,7 @@
   const isInv = c => dark && (c.id in invOverride ? invOverride[c.id] : c.invert);
   const imgCls = c => isInv(c) ? 'inv' : (dark && c.light ? 'dim' : '');
 
-  const state = { country: null, type: null, cluster: null, view: 'map', dailyCard: true };
+  const state = { country: null, type: null, cluster: null, view: 'map' };
   let visible = [];
 
   const matchType = c => !state.type || c.types.includes(state.type);
@@ -370,6 +410,8 @@
     && (!type || a.types.includes(type)));
   const countryCards = iso => cards.filter(c => c.countries.includes(iso) && matchType(c));
   const countAll = iso => cards.filter(c => c.countries.includes(iso)).length;
+  const trainerCount = iso => countryApps(iso).length;
+  const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
   // ---------- En-tête : types, clusters, mode sombre ----------
   function renderChips() {
@@ -420,6 +462,14 @@
   const wBucket = a => a < 0.5 ? 0 : a < 0.65 ? 1 : a < 0.8 ? 2 : a < 0.9 ? 3 : 4;
   const WCOL = ['#d9614c', '#e8995a', '#e9cf6a', '#9fcb7a', '#5fae7e'];
   const pct = a => Math.round(a * 100) + ' %';
+  const WLEGEND = `<div class="wlegend">${WCOL.map(c => `<i style="background:${c}"></i>`).join('')}<span>&lt;50 % → 90 %+ accuracy, all trainers · plain: under ${WMIN} answers</span><i class="mx"></i><span>mixed up in the last 60 days</span></div>`;
+  // Légende posée sur la carte : elle suit ce que les couleurs veulent dire (couverture, un type, ou ta précision)
+  function renderLegend() {
+    const row = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
+    $('legend').innerHTML = weak ? '<b>My accuracy</b>' + WLEGEND
+      : state.type ? `<b>${typeLabel[state.type]}</b>` + row('var(--sign)', '2+ cards') + row('var(--sign-soft)', '1 card, or a trainer') + row('var(--land)', 'nothing yet')
+      : '<b>Coverage</b>' + row('var(--sign)', '2+ cards') + row('var(--sign-soft)', '1 card') + row('#4f7f8f', 'trainer only') + row('var(--land)', 'nothing yet');
+  }
   let WD = null;
   function weakData() {
     if (WD) return WD;
@@ -444,8 +494,7 @@
   function weakEl() {
     const d = weakData();
     const s = document.createElement('section');
-    s.innerHTML = '<h2>Weak spots</h2>'
-      + `<div class="wlegend">${WCOL.map((c, i) => `<i style="background:${c}"></i>`).join('')}<span>&lt;50 % → 90 %+ accuracy, all trainers · grey: under ${WMIN} answers</span><i class="mx"></i><span>mixed up in the last 60 days</span></div>`;
+    s.innerHTML = '<h2>Weak spots</h2>';
     const tier = k => (window.TGM && TGM.tier(k)) || 4;
     const list = Object.entries(d).filter(([, w]) => w.seen >= 5)
       .sort((a, b) => a[1].acc - b[1].acc || tier(a[0]) - tier(b[0])).slice(0, 12);
@@ -481,7 +530,7 @@
   $('home').onclick = () => reset();
 
   function reset() { Object.assign(state, { country: null, type: null, cluster: null, view: 'map' }); update(); }
-  function selectCountry(iso) { Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); }
+  function selectCountry(iso) { pushNext = iso !== state.country; Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); fitTo(iso); }
   function selectCluster(k) { Object.assign(state, { cluster: k, country: null, view: k ? 'board' : 'map' }); update(); }
   function selectType(t) { Object.assign(state, { type: t, country: null, cluster: null, view: 'board' }); update(); }
 
@@ -537,33 +586,81 @@
     return total;
   }
 
+  // Trainers et liens externes : trouvés par leur nom ou leur type, seuls (« sign reader ») ou avec un pays (« bollard france », « plonk jp »)
+  const typeWords = t => [typeLabel[t], t, ...((types.find(x => x.key === t) || {}).aliases || [])];
+  const appName = Object.fromEntries(apps.map(a => [a.id, field([a.name.en, a.name.fr || '', a.id])]));
+  const appField = Object.fromEntries(apps.map(a => [a.id, field([a.name.en, a.name.fr || '', a.id, ...a.types.flatMap(typeWords)])]));
+  const center = iso => (window.SV_CENTER || {})[iso];
+  const REFS = [
+    { name: 'Plonk It', sub: 'country guide', f: field(['plonk', 'plonkit', 'guide']), href: iso => plonkitLink(iso) },
+    { name: 'Street View', sub: 'country coverage', f: field(['street', 'streetview', 'sv', 'coverage']),
+      href: iso => center(iso) ? `https://www.google.com/maps/@${center(iso)[0]},${center(iso)[1]},${center(iso)[2]}z/data=!5m1!1e5` : null },
+    { name: 'Relief', sub: 'topography', f: field(['relief', 'topo', 'topography']),
+      href: iso => center(iso) ? `https://opentopomap.org/#map=${center(iso)[2]}/${center(iso)[0]}/${center(iso)[1]}` : null },
+  ];
+  // Chaque mot va à la chose (trainer, lien) ou au pays ; il en faut au moins un de chaque côté
+  function splitMatch(qs, fThing, fCountry) {
+    let s = 0, a = 0, c = 0;
+    for (const q of qs) {
+      const sa = tokScore(q, fThing), sc = tokScore(q, fCountry);
+      if (!sa && !sc) return 0;
+      if (sa >= sc) a++; else c++;
+      s += Math.max(sa, sc);
+    }
+    return a && c ? s : 0;
+  }
+  const best = (list, max) => { list.sort((x, y) => y.s - x.s); return list.filter(r => r.s === list[0].s).slice(0, max); };
+  const hasContent = iso => countAll(iso) || trainerCount(iso);
+
   function searchAll(text) {
     const qs = words(text);
     if (!qs.length) return [];
     const cardRes = cards.map(c => ({ c, s: scoreAll(qs, cardFields(c)) })).filter(r => r.s)
       .sort((a, b) => b.s - a.s || a.c.title.localeCompare(b.c.title, 'fr')).slice(0, 8)
       .map(r => ({ kind: 'card', s: r.s, c: r.c }));
-    const ents = [];
-    for (const iso in countryField) {
-      const s = scoreAll(qs, [countryField[iso]]);
-      if (s) ents.push({ kind: 'country', s: s + (countAll(iso) ? 1 : 0), iso });
+    let appRes = [];
+    for (const a of apps) {
+      const named = qs.some(q => tokScore(q, appName[a.id]) >= 3) ? 1 : 0;
+      const alone = scoreAll(qs, [appField[a.id]]);
+      if (alone) { appRes.push({ kind: 'app', s: alone + named, a, iso: null, href: a.url }); continue; }
+      if (qs.length < 2) continue;
+      const pairs = a.countries.filter(iso => countryField[iso]).map(iso => ({ kind: 'app', s: splitMatch(qs, appField[a.id], countryField[iso]) + named, a, iso, href: appLink(a, iso) })).filter(r => r.s > named);
+      if (pairs.length) appRes.push(...best(pairs, 2));
     }
-    for (const t of types) { const s = scoreAll(qs, [typeField[t.key]]); if (s) ents.push({ kind: 'type', s, key: t.key }); }
-    for (const k in clusters) { const s = scoreAll(qs, [clusterField[k]]); if (s) ents.push({ kind: 'cluster', s, key: k }); }
+    appRes = appRes.sort((x, y) => y.s - x.s || x.a.name.en.localeCompare(y.a.name.en, 'en')).slice(0, 4);
+    let refRes = [];
+    if (qs.length >= 2) for (const R of REFS) {
+      const pairs = Object.keys(countryField).map(iso => ({ kind: 'ref', s: splitMatch(qs, R.f, countryField[iso]), name: R.name, sub: R.sub, iso, href: R.href(iso) })).filter(r => r.s && r.href);
+      if (pairs.length) refRes.push(...best(pairs, 1));
+    }
+    refRes = refRes.sort((x, y) => y.s - x.s).slice(0, 2);
+    let countries = [], others = [];
+    const cScore = iso => (countAll(iso) ? 1 : 0) + (trainerCount(iso) ? 0.5 : 0);
+    for (const iso in countryField) { const s = scoreAll(qs, [countryField[iso]]); if (s) countries.push({ kind: 'country', s: s + cScore(iso), iso }); }
+    for (const t of types) { const s = scoreAll(qs, [typeField[t.key]]); if (s) others.push({ kind: 'type', s, key: t.key }); }
+    for (const k in clusters) { const s = scoreAll(qs, [clusterField[k]]); if (s) others.push({ kind: 'cluster', s, key: k }); }
+    // Le pays d'un trainer ou d'un lien trouvé (« bollard france » → France) figure aussi dans la liste
+    for (const r of [...appRes, ...refRes]) if (r.iso && !countries.some(c => c.iso === r.iso)) countries.push({ kind: 'country', s: r.s, iso: r.iso });
     // Rien de complet : on montre ce que chaque mot a trouvé seul (« phone bg » → Bulgarie, Bangladesh, Indicatifs tél.)
-    if (!cardRes.length && !ents.length) {
+    if (!cardRes.length && !appRes.length && !refRes.length && !countries.length && !others.length) {
       for (const q of qs) {
-        for (const iso in countryField) { const s = tokScore(q, countryField[iso]); if (s >= 2) ents.push({ kind: 'country', s: s + (countAll(iso) ? 1 : 0), iso }); }
-        for (const t of types) { const s = tokScore(q, typeField[t.key]); if (s >= 3) ents.push({ kind: 'type', s, key: t.key }); }
+        for (const iso in countryField) { const s = tokScore(q, countryField[iso]); if (s >= 2) countries.push({ kind: 'country', s: s + cScore(iso), iso }); }
+        for (const t of types) { const s = tokScore(q, typeField[t.key]); if (s >= 3) others.push({ kind: 'type', s, key: t.key }); }
       }
     }
-    ents.sort((a, b) => b.s - a.s);
-    return [...cardRes, ...ents.slice(0, cardRes.length ? 3 : 6)];
+    // Un pays sans fiche ni trainer n'apporte rien dès qu'il y a mieux à montrer
+    if (cardRes.length || appRes.length || refRes.length || countries.some(c => hasContent(c.iso))) countries = countries.filter(c => hasContent(c.iso));
+    countries.sort((a, b) => b.s - a.s); others.sort((a, b) => b.s - a.s);
+    // La requête est un nom de pays, rien d'autre : sa page passe devant ses fiches
+    const justCountry = countries.length && qs.every(q => tokScore(q, countryField[countries[0].iso]) >= 4.5);
+    const group = (label, list) => list.map(r => Object.assign(r, { group: label }));
+    const C = group('Countries', countries.slice(0, 3)), K = group('Cards', cardRes), T = group('Trainers', appRes), R = group('References', refRes);
+    return [...(justCountry ? [...C, ...K, ...T] : [...K, ...T, ...C]), ...R, ...group('Filters', others.slice(0, 3))];
   }
 
   // ---------- Palette ----------
   const palette = $('palette'), pinput = $('pinput'), presults = $('presults');
-  let results = [], active = 0;
+  let results = [], active = 0, rows = [];
   function openPalette(seed = '') {
     palette.classList.add('open');
     pinput.value = seed;
@@ -571,31 +668,46 @@
     runSearch();
   }
   const closePalette = () => { palette.classList.remove('open'); pinput.blur(); };
-  function runSearch() { results = searchAll(pinput.value); active = 0; paintResults(); }
+  // Champ vide : les derniers pays ouverts
+  function runSearch() {
+    results = pinput.value.trim() ? searchAll(pinput.value) : recent().map(iso => ({ kind: 'country', iso, group: 'Recent' }));
+    active = 0; paintResults();
+  }
+  const countrySub = iso => {
+    const n = countAll(iso), k = trainerCount(iso);
+    return !n && !k ? 'nothing yet' : (k ? plural(k, 'trainer') + ' · ' : '') + (n ? plural(n, 'card') : 'no card yet');
+  };
   function paintResults() {
-    presults.innerHTML = '';
+    presults.innerHTML = ''; rows = [];
     if (pinput.value.trim() && !results.length) {
-      presults.innerHTML = '<div class="pnone">Nothing found. Try a country (English, French or ISO code) and a type: “phone br”, “car paraguay”.</div>';
+      presults.innerHTML = '<div class="pnone">Nothing found. Try a country (English, French or ISO code) and a clue or a trainer: “phone br”, “bollard france”.</div>';
       return;
     }
+    let last = null;
     results.forEach((r, i) => {
+      if (r.group !== last) { last = r.group; presults.appendChild(Object.assign(document.createElement('div'), { className: 'pgrp', textContent: r.group })); }
       const b = document.createElement('button');
       b.className = 'pr' + (i === active ? ' active' : '');
       if (r.kind === 'card') {
         const c = r.c;
         const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
         b.innerHTML = `<img src="${enc(c.thumb)}" class="${imgCls(c)}" alt=""><span class="txt">${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}</small></span>`;
+      } else if (r.kind === 'app') {
+        b.innerHTML = `<span class="ico go">↗</span><span class="txt">${r.a.name.en}${r.iso ? ' · ' + nameOf(r.iso) : ''}<small>trainer · ${r.a.types.map(t => typeLabel[t]).join(', ')}${r.a.status === 'wip' ? ' · in progress' : ''}</small></span>`;
+      } else if (r.kind === 'ref') {
+        b.innerHTML = `<span class="ico ext">↗</span><span class="txt">${r.name} · ${nameOf(r.iso)}<small>${r.sub}</small></span>`;
+      } else if (r.kind === 'country') {
+        b.innerHTML = `<span class="ico">${r.iso}</span><span class="txt">${nameOf(r.iso)}<small>${countrySub(r.iso)}</small></span>`;
       } else {
-        const label = r.kind === 'country' ? nameOf(r.iso) : r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
-        const n = r.kind === 'country' ? countAll(r.iso) : r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
-        const kind = r.kind === 'country' ? r.iso : r.kind === 'type' ? 'type' : 'cluster';
-        b.innerHTML = `<span class="ico">${kind}</span><span class="txt">${label}<small>${n > 1 ? `see the ${n} cards` : n ? 'see the card' : 'no card yet'}</small></span>`;
+        const label = r.kind === 'type' ? typeLabel[r.key] : clusters[r.key].label;
+        const n = r.kind === 'type' ? cards.filter(c => c.types.includes(r.key)).length : cards.filter(c => c.cluster === r.key || c.countries.some(i => clusters[r.key].countries.includes(i))).length;
+        b.innerHTML = `<span class="ico">${r.kind}</span><span class="txt">${label}<small>${n > 1 ? `see the ${n} cards` : n ? 'see the card' : 'no card yet'}</small></span>`;
       }
       b.onmousedown = e => { e.preventDefault(); choose(i); };
-      b.onmousemove = () => { if (active !== i) { active = i; paintResults(); } };
-      presults.appendChild(b);
+      b.onmousemove = () => { if (active !== i) { rows[active] && rows[active].classList.remove('active'); active = i; b.classList.add('active'); } };
+      presults.appendChild(b); rows.push(b);
     });
-    presults.children[active]?.scrollIntoView({ block: 'nearest' });
+    rows[active]?.scrollIntoView({ block: 'nearest' });
   }
   function choose(i) {
     const r = results[i];
@@ -603,6 +715,7 @@
     const list = results.filter(x => x.kind === 'card').map(x => x.c);
     closePalette();
     if (r.kind === 'card') openLb(r.c, list);
+    else if (r.kind === 'app' || r.kind === 'ref') window.open(r.href, '_blank', 'noopener');   // nouvel onglet, comme depuis la fiche pays
     else if (r.kind === 'country') openCountry(r.iso);
     else if (r.kind === 'type') selectType(r.key);
     else selectCluster(r.key);
@@ -631,9 +744,14 @@
   $('tools').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 
   // Un pays : toujours sa fiche pays (trainers, liens, fiches) ; la planche reste à un clic
-  function openCountry(iso) {
+  let pushNext = false;                        // un changement de pays ajoute une entrée d'historique (bouton Retour)
+  const recent = () => { const r = store.get('recent', []); return (Array.isArray(r) ? r : []).filter(k => typeof k === 'string' && countryField[k]).slice(0, 5); };
+  function openCountry(iso, fit = true) {
+    pushNext = iso !== state.country;
+    store.set('recent', [iso, ...recent().filter(k => k !== iso)].slice(0, 5));
     Object.assign(state, { country: iso, cluster: null, type: null, view: 'map' });
     update();
+    if (fit) fitTo(iso);
   }
 
   // ---------- Carte ----------
@@ -648,10 +766,18 @@
   }
   // Relief : ombrage Natural Earth reprojeté (relief.webp), fondu sur les pays, ne capte pas la souris
   const relief = document.createElementNS(SVGNS, 'image');
-  relief.setAttribute('href', 'relief.webp');
   relief.setAttribute('width', W.w); relief.setAttribute('height', W.h);
   relief.setAttribute('class', 'relief');
   g.appendChild(relief);
+  // Le relief est un décor de 2,6 Mo : chargé une fois la carte affichée, jamais sur un écran de téléphone ni en économie de données
+  const loadRelief = () => {
+    if (PHONE.matches || (navigator.connection && navigator.connection.saveData)) return;
+    relief.addEventListener('load', () => relief.classList.add('in'));
+    relief.setAttribute('href', 'relief.webp');
+    setTimeout(() => relief.classList.add('in'), 4000);
+  };
+  const whenIdle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 300);
+  if (document.readyState === 'complete') whenIdle(loadRelief); else addEventListener('load', () => whenIdle(loadRelief));
   const dots = document.createElementNS(SVGNS, 'g');
   g.appendChild(dots);
   for (const c of W.countries.filter(c => c.small)) {
@@ -666,15 +792,17 @@
       // un type choisi : un pays couvert par un trainer de ce type (ex. phone-codes) compte comme couvert
       const n = countryCards(iso).length || (state.type && countryApps(iso, state.type).length ? 1 : 0);
       const w = weak ? weakData()[iso] : null, wb = w && w.seen >= WMIN ? wBucket(w.acc) : -1;
+      const tr = weak || state.type ? 0 : trainerCount(iso);
       for (const el of shapes[iso]) {
         el.classList.toggle('c1', !weak && n === 1);
         el.classList.toggle('c2', !weak && n >= 2);
+        el.classList.toggle('t1', !n && tr > 0);
         for (let i = 0; i < 5; i++) el.classList.toggle('w' + i, wb === i);
         el.classList.toggle('wmix', !!(w && w.mix));
         el.classList.toggle('sel', state.country === iso);
         el.classList.toggle('incluster', inCluster.has(iso));
       }
-      if (shapes[iso][1]) shapes[iso][1].style.display = n || wb >= 0 || state.country === iso || inCluster.has(iso) ? '' : 'none';
+      if (shapes[iso][1]) shapes[iso][1].style.display = n || tr || wb >= 0 || state.country === iso || inCluster.has(iso) ? '' : 'none';
     }
   }
 
@@ -702,7 +830,42 @@
   };
   const resetVb = () => { vb = { x: 0, y: 0, w: W.w, h: W.h }; applyVb(); };
   resetVb();
-  $('recenter').onclick = resetVb;
+  // Zoom : boutons, clavier (+ et −) et molette partagent la même limite ; « fit » cadre le pays choisi, sinon le monde
+  const MAXZ = 12;
+  function zoomBy(f) {
+    const nw = Math.min(W.w, Math.max(W.w / MAXZ, vb.w * f)), k = nw / vb.w;
+    vb = nw >= W.w ? { x: 0, y: 0, w: W.w, h: W.h } : { x: vb.x + vb.w * (1 - k) / 2, y: vb.y + vb.h * (1 - k) / 2, w: nw, h: vb.h * k };
+    applyVb();
+  }
+  // Boîte du plus grand morceau d'un pays (la France sans la Guyane, les États-Unis sans Hawaï) ; un point pour les tout petits
+  const boxes = {};
+  function mainBox(iso) {
+    if (iso in boxes) return boxes[iso];
+    const c = W.countries.find(c => c.iso === iso);
+    let best = null;
+    if (c && c.small && c.c) { const k = W.w / 40; best = { x: c.c[0] - k / 2, y: c.c[1] - k / 2, w: k, h: k }; }
+    else if (c) for (const part of c.d.split('M')) {
+      const n = part.match(/-?\d+(?:\.\d+)?/g);
+      if (!n || n.length < 6) continue;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i + 1 < n.length; i += 2) { const x = +n[i], y = +n[i + 1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      const a = (x1 - x0) * (y1 - y0);
+      if (!best || a > best.a) best = { a, x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    return (boxes[iso] = best);
+  }
+  function fitTo(iso) {
+    const b = mainBox(iso);
+    if (!b) return;
+    const pad = v => v + 2 * Math.min(0.7 * v, 120);                 // de la marge pour voir les voisins, sans noyer les grands pays
+    const w = Math.min(W.w, Math.max(W.w / MAXZ, pad(b.w), pad(b.h) * W.w / W.h)), h = w * W.h / W.w;
+    vb = { x: Math.min(W.w - w, Math.max(0, b.x + b.w / 2 - w / 2)), y: Math.min(W.h - h, Math.max(0, b.y + b.h / 2 - h / 2)), w, h };
+    applyVb();
+  }
+  const fitView = () => state.country ? fitTo(state.country) : resetVb();
+  $('zoomIn').onclick = () => zoomBy(1 / 1.6);
+  $('zoomOut').onclick = () => zoomBy(1.6);
+  $('fit').onclick = fitView;
 
   const toSvg = e => {
     const r = wrapRect(), { s, ox, oy } = fitOf(vb, r);
@@ -711,7 +874,7 @@
   svg.addEventListener('wheel', e => {
     e.preventDefault();
     const p = toSvg(e);
-    const nw = Math.min(W.w, Math.max(W.w / 40, vb.w * Math.exp(e.deltaY * 0.0015)));
+    const nw = Math.min(W.w, Math.max(W.w / MAXZ, vb.w * Math.exp(e.deltaY * 0.0015)));
     const f = nw / vb.w;
     vb = { x: p.x - (p.x - vb.x) * f, y: p.y - (p.y - vb.y) * f, w: nw, h: vb.h * f };
     previewVb();
@@ -738,6 +901,7 @@
     if (iso) {
       const n = countryCards(iso).length;
       const tr = state.type ? countryApps(iso, state.type) : [];
+      const k = state.type ? 0 : trainerCount(iso);
       const r = svg.parentElement.getBoundingClientRect();
       tip.style.display = 'block';
       tip.style.left = (e.clientX - r.left) + 'px';
@@ -745,7 +909,7 @@
       const w = weak ? weakData()[iso] : null;
       tip.innerHTML = weak
         ? `${nameOf(iso)}<span>${w && w.seen ? `${pct(w.acc)} over ${w.seen} answer${w.seen > 1 ? 's' : ''}` : 'not played yet'}${w && w.mix ? ` · ${w.mix} mix-up${w.mix > 1 ? 's' : ''}` : ''}</span>`
-        : `${nameOf(iso)}<span>${n ? n + (n > 1 ? ' cards' : ' card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
+        : `${nameOf(iso)}<span>${k ? plural(k, 'trainer') + ' · ' : ''}${n ? plural(n, 'card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
     } else tip.style.display = 'none';
   });
   svg.addEventListener('pointerup', e => {
@@ -754,7 +918,7 @@
     if (moved) { applyVb(); return; }
     const iso = isoAt(e);
     if (iso) {
-      openCountry(iso);
+      openCountry(iso, false);                 // cliqué sur la carte : on ne la déplace pas sous le pointeur
       if (PHONE.matches) requestAnimationFrame(() => $('panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
     else { state.country = null; update(); }
@@ -803,10 +967,10 @@
     }
     return s;
   }
-  function header(title, sub, actions) {
+  function header(title, sub, actions, facts) {
     const h = document.createElement('div');
     h.className = 'head';
-    h.innerHTML = `<div><h1>${title}</h1>${sub ? `<span class="iso">${sub}</span>` : ''}</div>`;
+    h.innerHTML = `<div><h1>${title}</h1>${facts ? `<p class="facts">${facts.join(' · ')}</p>` : sub ? `<span class="iso">${sub}</span>` : ''}</div>`;
     const a = Object.assign(document.createElement('div'), { className: 'actions' });
     for (const [label, fn, cls] of actions) {
       const b = Object.assign(document.createElement('button'), { className: cls || 'ghost', textContent: label });
@@ -814,6 +978,18 @@
     }
     h.appendChild(a);
     return h;
+  }
+  // Résumé d'un pays en une ligne : code, continent et tier s'il est dans countries.json, puis ce que l'Atlas a sur lui
+  function countryFacts(iso) {
+    const f = [iso], c = window.TGM && TGM.country(iso);
+    if (c) {
+      const ct = TGM.continents[c.continent], t = TGM.tier(iso), tn = TGM.tierNames[t];
+      if (ct) f.push(ct.en);
+      f.push(`Tier ${t}${tn ? ' ' + tn.en.toLowerCase() : ''}`);
+    }
+    f.push(plural(countAll(iso), 'card'), plural(trainerCount(iso), 'trainer'));
+    if (state.type) f.push(typeLabel[state.type] + ' only');
+    return f;
   }
   const groupBy = (list, keyFn) => {
     const m = new Map();
@@ -904,7 +1080,7 @@
         ...(state.country && countAll(state.country) ? [['Quiz', () => { location.href = 'quiz.html#' + state.country.toLowerCase(); }]] : []),
         ['Board', () => { state.view = 'board'; update(); }],
         closeBtn(() => { state.country = state.cluster = null; if (!state.country) state.type = null; update(); }),
-      ]));
+      ], state.country ? countryFacts(state.country) : null));
       fillSelection(panel, false);
       return;
     }
@@ -913,21 +1089,11 @@
     const st = Object.assign(document.createElement('div'), { className: 'stats' });
     st.innerHTML = `<div>${cards.length}<small>cards</small></div><div>${nCountries}<small>countries covered</small></div>`;
     panel.appendChild(st);
-    const hint = Object.assign(document.createElement('p'), { className: 'hint' });
-    hint.innerHTML = TOUCH
-      ? 'Search a country or a card: “phone br”, “plate pl”, “car paraguay”. Tap a country on the map for its page: trainers, links, cards.'
-      : 'Just type, any time: “phone br”, “plate pl”, “car paraguay”. <kbd>Enter</kbd> opens the card. Clicking a country opens its page: trainers, links, cards.';
-    panel.appendChild(hint);
     if (weak) panel.appendChild(weakEl());
     const tr = trainersEl();
     tr && panel.appendChild(tr);
     const gp = gapsEl();
     gp && panel.appendChild(gp);
-    if (state.dailyCard && cards.length) {
-      const day = Math.floor(Date.now() / 86400000);
-      const s = section('Card of the day', [cards[day % cards.length]]);
-      s && panel.appendChild(s);
-    }
     const w = section('World', cards.filter(c => c.world));
     w && panel.appendChild(w);
   }
@@ -944,7 +1110,7 @@
       const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
       l.innerHTML = '<b></b><small></small>';
       l.querySelector('b').textContent = `${a.name.en} ↗`;
-      l.querySelector('small').textContent = `${a.types.map(t => typeLabel[t]).join(', ')} · ${nameOf(iso)}`;
+      l.querySelector('small').textContent = a.types.map(t => typeLabel[t]).join(', ');
       box.appendChild(l);
     });
     // Plonk It et Street View côte à côte (liens externes, bordure pointillée)
@@ -1223,38 +1389,47 @@
       else if (letter) { e.preventDefault(); openPalette(e.key); }
       return;
     }
-    if (e.key === 'Escape') { reset(); return; }
+    if (e.key === 'Escape') { escapeLayer(); return; }
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1 / 1.6); return; }
+    if (e.key === '-') { e.preventDefault(); zoomBy(1.6); return; }
     if (e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) { e.preventDefault(); openPalette(); return; }
     if (letter) { e.preventDefault(); openPalette(e.key); }
   });
-
-  // ---------- Réglages Lively (si utilisé en wallpaper) ----------
-  window.livelyPropertyListener = (name, val) => {
-    const root = document.documentElement.style;
-    if (name === 'leftGutter') root.setProperty('--gutter-left', val + 'px');
-    if (name === 'bottomGutter') root.setProperty('--gutter-bottom', val + 'px');
-    if (name === 'dailyCard') { state.dailyCard = !!val; renderPanel(); }
-  };
 
   // Lien direct #iso (ex. #in) : la fiche pays suit l'adresse, et l'adresse suit la fiche
   const isoFromHash = () => {
     const h = decodeURIComponent(location.hash.slice(1)).toUpperCase();
     return /^[A-Z]{2}$/.test(h) && (W.names[h] || W.namesEn[h]) ? h : null;
   };
-  function syncHash() {
+  function syncHash(push) {
     const want = state.country ? '#' + state.country.toLowerCase() : '';
-    if (location.hash.toLowerCase() !== want) history.replaceState(null, '', want || location.pathname + location.search);
+    if (location.hash.toLowerCase() === want) return;
+    history[push ? 'pushState' : 'replaceState'](null, '', want || location.pathname + location.search);
   }
-  window.addEventListener('hashchange', () => { const iso = isoFromHash(); if (iso && iso !== state.country) openCountry(iso); });
+  // Retour / Avancer, ou adresse modifiée à la main : l'état suit l'adresse, sans ajouter d'entrée
+  window.addEventListener('popstate', () => {
+    const iso = isoFromHash();
+    if (iso === state.country) return;
+    if (iso) { Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); fitTo(iso); }
+    else { state.country = null; update(); }
+  });
+  // Échap ferme une couche à la fois : menu, planche, pays ou cluster, puis filtre de type
+  function escapeLayer() {
+    if ($('tools').classList.contains('open')) return setMenu(false);
+    if (state.view === 'board' && selectionTitle()) { state.view = 'map'; return update(); }
+    if (state.country || state.cluster) { state.country = state.cluster = null; return update(); }
+    if (state.type) { state.type = null; update(); }
+  }
 
   function update() {
     WD = null;
     $('app').classList.toggle('board-mode', state.view === 'board' && !!selectionTitle());
-    renderChips(); paintMap(); renderPanel(); renderBoard();
-    syncHash();
+    renderChips(); paintMap(); renderLegend(); renderPanel(); renderBoard();
+    syncHash(pushNext); pushNext = false;
   }
   if (isoFromHash()) Object.assign(state, { country: isoFromHash(), view: 'map' });
   update();
+  if (state.country) fitTo(state.country);
 })();
 </script>
 </body>
