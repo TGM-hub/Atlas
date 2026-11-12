@@ -520,7 +520,7 @@
         "ZA"
       ],
       "types": [
-        "other"
+        "cities"
       ],
       "deeplink": "https://tgm-hub.github.io/city-placer/#explore/{iso}"
     },

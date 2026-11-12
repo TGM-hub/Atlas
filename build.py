@@ -11,6 +11,7 @@ Arborescence :
   Un sous-dossier optionnel dans un type regroupe des fiches : images/ID Indonesia/other/Kabupaten/Java.png
   Le nom du fichier devient le titre de la fiche.
 """
+import datetime
 import hashlib
 import shutil
 import json
@@ -132,6 +133,13 @@ shown_apps = [a for a in apps if a.get("status") in APP_SHOWN]
 sys.path.insert(0, str(ROOT / "tools"))
 import tgm_core  # noqa: E402
 tgm_core.build(apps, problems, warnings)
+
+# Barre et styles communs des six pages (tools/shell.py) : réécrits à chaque build, pour qu'aucune page ne diverge
+import shell  # noqa: E402
+try:
+    shell.apply(ROOT, quiet=True)
+except shell.ShellError as e:
+    problems.append(str(e))
 
 
 def analyse(src, dst):
@@ -257,6 +265,7 @@ for f in sorted(_all):
         "invert": info["invert"],
         "light": info.get("light", False),
         "lowres": max(info["w"], info["h"]) < LOWRES_PX,
+        "added": datetime.date.fromtimestamp(f.stat().st_mtime).isoformat(),   # jour du fichier : « New » dans l'Atlas
         "src": source_of(key),
     })
 

@@ -41,7 +41,7 @@ APPS = {
     "Atlas": {"dir": ATLAS, "pages": [
         {"page": "index.html", "links": [["#fr", "document.querySelector('#panel h1')?.textContent.trim() === 'France'"],
                                          ["#ua", "[...document.querySelectorAll('#panel a.app')].some(a => a.href.includes('russian-pannels-learning/#explore/ua'))"],
-                                         ["", "(() => { document.getElementById('weakToggle').click(); const ok = document.getElementById('weakToggle').classList.contains('on') && !!document.querySelector('#legend .wlegend'); document.getElementById('weakToggle').click(); return ok; })()"]]},
+                                         ["", "(() => { const b = c => document.querySelector(`#colourBy [data-c=${c}]`); b('accuracy').click(); const ok = b('accuracy').getAttribute('aria-checked') === 'true' && !!document.querySelector('#legend .wlegend'); b('coverage').click(); return ok; })()"]]},
         {"page": "daily.html", "links": [["", "document.querySelectorAll('#perApp tr').length >= 9"]]},
         {"page": "games.html", "links": [["", "!!document.getElementById('imp') && !!document.querySelector('#out section')"]]},
         {"page": "quiz.html", "play": "async () => { document.getElementById('flip').click(); document.querySelector('#acts button[data-r=\"2\"]').click(); }",
@@ -140,6 +140,10 @@ def static_checks(name, root):
         if missing:
             errs.append(f"bollards : {len(missing)} image(s) absente(s), ex. {missing[:3]}")
     if name == "Atlas":
+        import shell                                   # barre commune des six pages : à jour avec tools/shell.py ?
+        stale = shell.check(root)
+        if stale:
+            errs.append(f"barre commune désynchronisée : {', '.join(stale)} (relancer build.cmd)")
         dj = (root / "data.js").read_text(encoding="utf-8")
         data = json.loads(dj[dj.index("=") + 1:].strip().rstrip(";"))
         for c in data["cards"]:

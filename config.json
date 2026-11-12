@@ -125,6 +125,17 @@
       ]
     },
     {
+      "key": "cities",
+      "label": "Cities",
+      "aliases": [
+        "city",
+        "ville",
+        "villes",
+        "town",
+        "towns"
+      ]
+    },
+    {
       "key": "car",
       "label": "Google car",
       "aliases": [

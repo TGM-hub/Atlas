@@ -6,13 +6,11 @@
 <title>Compare · GeoGuessr Atlas</title>
 <style>
   :root {
-    --ocean: #12283a; --panel: #0e2130; --land: #264457; --line: #3b5a6d;
-    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c; --glass: #7cc7b4; --pink: #ff5fa2;
-    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+    --glass: #7cc7b4; --pink: #ff5fa2;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--ocean); color: var(--ink); font-family: var(--font); }
-  body { padding: 18px 16px 60px; }
+  body { padding: 16px 16px 60px; }
   .wrap { max-width: 1100px; margin: 0 auto; }
   a { color: var(--glass); }
   button, select { font: inherit; color: inherit; }
@@ -68,13 +66,42 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a"><link rel="icon" href="icons/icon-192.png">
 <script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <!-- /tgm-pwa -->
+<!-- tgm-shell:css -->
+<style id="tgm-shell">
+  /* Généré par tools/shell.py, ne pas modifier à la main */
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #2b4c60; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  .tgm-bar { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 -16px 14px; padding: 0 20px; font-family: var(--font); }
+  .tgm-home { padding: 2px 10px 2px 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: normal; color: var(--ink); text-decoration: none; }
+  .tgm-tabs { display: flex; gap: 2px; }
+  .tgm-bar .tgm-tabs { margin-left: auto; }
+  .tgm-tabs a { padding: 7px 11px 5px; font-size: 16px; font-weight: 600; line-height: normal; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tgm-tabs a:hover { color: var(--ink); }
+  .tgm-tabs a[aria-current] { color: var(--ink); border-bottom-color: var(--sign); }
+  @media (max-width: 700px) {
+    .tgm-bar { flex-wrap: wrap; gap: 2px 6px; margin-bottom: 10px; padding: 0 16px; }
+    .tgm-home { font-size: 19px; }
+    .tgm-bar .tgm-tabs { flex: 1 1 100%; margin-left: 0; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
+    .tgm-bar .tgm-tabs::-webkit-scrollbar { display: none; }
+    .tgm-bar .tgm-tabs a { padding: 6px 6px 4px; font-size: 15px; }
+  }
+  /* Formes communes : 4 px pour les contrôles, 6 px pour les surfaces */
+  .wrap button, .wrap select, .wrap input, .wrap textarea { border-radius: 4px; }
+  .wrap .card, .wrap section, .wrap #card, .wrap .bar { border-radius: 6px; }
+</style>
+<!-- /tgm-shell:css -->
 </head>
 <body>
+<!-- tgm-shell:bar -->
+<nav class="tgm-bar" aria-label="Atlas pages"><a class="tgm-home" href="index.html" title="Back to the map">Atlas</a><span class="tgm-tabs"><a href="index.html" title="Map, countries and cards">Explore</a><a href="daily.html" title="Daily review (2 × 30 min)">Review</a><a href="games.html" title="Your Duels and Team Duels, place by place">Duels</a><a href="confusions.html" title="Countries you mix up, across trainers">Mix-ups</a><a href="quiz.html" title="Recall the cards, spaced repetition">Quiz</a></span></nav>
+<!-- /tgm-shell:bar -->
 <div class="wrap">
   <header>
     <h1>Compare</h1>
     <span class="muted">two countries side by side: cards, your results, how often you mix them up</span>
-    <span class="right"><a href="./">Atlas</a><a href="daily.html">Review</a><a href="games.html">Duels</a><a href="confusions.html">Mix-ups</a><a href="quiz.html">Quiz</a></span>
   </header>
   <div class="pick">
     <select id="selA" aria-label="First country"></select>

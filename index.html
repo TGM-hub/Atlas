@@ -18,7 +18,7 @@
     --line: #3b5a6d;
     --panel: #0e2130;
     --inv-bg: #1a1a1a;
-    --panel-w: clamp(340px, 28vw, 520px);
+    --panel-w: clamp(360px, 34vw, 600px);
     --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
@@ -31,15 +31,38 @@
     height: 100%;
     display: grid;
     grid-template-columns: 1fr var(--panel-w);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     padding: 16px 20px;
-    gap: 14px 20px;
+    gap: 10px 20px;
   }
-  #app.board-mode #mapwrap, #app.board-mode #panel { display: none; }
-  #app:not(.board-mode) #board { display: none; }
+  /* Largeur du panneau : étroit (défaut), moitié, plein écran (la carte s'efface) */
+  @media (min-width: 901px) {
+    #app.w1 { grid-template-columns: 1fr 1fr; }
+    #app.w2 { grid-template-columns: 1fr; }
+    #app.w2 #mapwrap { display: none; }
+  }
 
   /* --- En-tête --- */
-  header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  header { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; position: relative; }
+  #tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  #settingsBtn, #menuBtn { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border: 1.5px solid var(--line); border-radius: 4px; color: var(--muted); }
+  #settingsBtn:hover, #settingsBtn[aria-expanded="true"] { color: var(--ink); border-color: var(--ink); }
+  #gear { position: relative; display: flex; }
+  #settings { position: absolute; left: 0; top: calc(100% + 6px); z-index: 20; min-width: 210px; padding: 8px; background: var(--panel); border: 1.5px solid var(--line); border-radius: 6px; box-shadow: 0 12px 30px rgba(0,0,0,.45); }
+  #settings[hidden] { display: none; }
+  #settings button[role=switch] { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 6px 8px; font-size: 15px; border-radius: 4px; }
+  #settings button[role=switch]:hover { background: #16303f; }
+  #settings button[role=switch] i { width: 30px; height: 16px; border-radius: 8px; background: var(--line); position: relative; flex: none; }
+  #settings button[role=switch] i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+  #settings button[role=switch][aria-checked="true"] i { background: var(--sign); }
+  #settings button[role=switch][aria-checked="true"] i::after { left: 16px; background: #1b2a33; }
+  /* Filtre par type d'indice : toujours les mêmes puces, dans le même ordre ; la rangée défile si la fenêtre est étroite */
+  #clues { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  #clues em { font-style: normal; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 2px; flex: none; }
+  #clues .chip { flex: none; white-space: nowrap; padding: 4px 8px; font-size: 14px; gap: 5px; align-items: center; }
+  #clues .chip .n { min-width: 17px; text-align: right; }      /* largeur fixe : les puces ne bougent pas quand les comptes changent */
+  #clues .chip .n.tr { width: 10px; min-width: 10px; height: 10px; margin-left: 7px; border-radius: 2px; background: #4f7f8f; font-size: 0; }
+  #clues .chip.on .n.tr { background: #1b2a33; }
   #home { font-size: 22px; font-weight: 700; padding: 2px 10px 2px 0; letter-spacing: -.01em; }
   #searchBtn {
     display: inline-flex; align-items: baseline; gap: 10px; min-width: 240px;
@@ -54,14 +77,15 @@
   }
   .chip b { font-weight: 600; color: var(--ink); }
   .chip .n { font-size: 12px; font-variant-numeric: tabular-nums; }
-  .chip.empty { opacity: .45; }
+  .chip.zero { opacity: .45; }
+  .chip:disabled { cursor: default; opacity: .3; }
+  .chip:disabled:hover { border-color: var(--line); }
+  .chip.all.cur { border-color: var(--ink); }
   .chip:hover { border-color: var(--ink); }
   .chip.on { background: var(--sign); border-color: var(--sign); color: #1b2a33; }
   .chip.on b { color: #1b2a33; }
   .chip.cluster.on { background: var(--sea-glass); border-color: var(--sea-glass); }
   .sep { width: 1px; height: 22px; background: #33505f; margin: 0 4px; }
-  #darkToggle { margin-left: auto; }
-  #dailyLink, #mixLink, #cmpLink, #quizLink, #duelsLink { text-decoration: none; color: inherit; }
 
   /* --- Carte --- */
   #mapwrap { position: relative; min-height: 0; border-radius: 6px; overflow: hidden; }
@@ -73,14 +97,23 @@
   #map .c2 { fill: var(--sign); }
   #map .t1 { fill: #4f7f8f; }   /* no card, but a trainer covers the country */
   /* Weak spots: colour = your accuracy across trainers (tgm.stats), grey = not enough answers */
-  #map .w0 { fill: #d9614c; } #map .w1 { fill: #e8995a; } #map .w2 { fill: #e9cf6a; } #map .w3 { fill: #9fcb7a; } #map .w4 { fill: #5fae7e; }
-  #map .wmix { stroke: #ff5fa2; stroke-width: calc(var(--sw, .6) * 2.4); }
+  #map .w0 { fill: #d9663a; } #map .w1 { fill: #eda66b; } #map .w2 { fill: #cfd6da; } #map .w3 { fill: #86b6d6; } #map .w4 { fill: #3f86bd; }
+  #map .wfew { fill: url(#hatch); }   /* 1 or 2 answers: not enough for a colour */
+  #map .wmix { stroke: #ff5fa2; stroke-width: calc(var(--sw, .6) * 2.4); stroke-dasharray: calc(var(--sw, .6) * 5) calc(var(--sw, .6) * 3); }
+  #map .f1 { fill: #f2c94c; } #map .f2 { fill: #b8974a; } #map .f3 { fill: #6f7f6a; } #map .f4 { fill: #3f6475; }
+  #colourBy { position: absolute; left: 12px; top: 12px; display: flex; border: 1.5px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel); }
+  #colourBy button { padding: 6px 10px; font-size: 13px; font-weight: 600; color: var(--muted); border-right: 1px solid var(--line); }
+  #colourBy button:last-child { border-right: 0; }
+  #colourBy button:hover { color: var(--ink); }
+  #colourBy button[aria-checked="true"] { background: var(--ink); color: #13232e; }
   #map .hover { fill: var(--land-hover); }
   #map .c1.hover, #map .c2.hover { fill: #ffe08a; }
   #map .t1.hover { fill: #6a9bab; }
   #map .incluster { stroke: var(--sea-glass); stroke-width: 1.6; }
   #map .sel { fill: #fff4cc; stroke: #fff; stroke-width: 1.8; }
   #map circle { stroke-width: calc(var(--sw, .6) * 1.6); }
+  #map text { pointer-events: none; fill: #e6eef2; stroke: #0e2130; paint-order: stroke; stroke-linejoin: round; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+  #map text.on-light { fill: #13232e; stroke: rgba(255, 244, 204, .85); }
   #map .relief { pointer-events: none; opacity: 0; transition: opacity .3s; }
   #map .relief.in { opacity: .55; }
   #tip {
@@ -94,7 +127,10 @@
   #legend b { font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
   #legend > span { display: flex; align-items: center; gap: 7px; }
   #legend > span i { width: 16px; height: 10px; border-radius: 2px; flex: none; }
-  #legend .wlegend { margin: 0; color: var(--ink); }
+  #legend .wlegend { margin: 0; color: var(--ink); gap: 3px 9px; }
+  #legend .wlegend span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  #legend .hatch { background: repeating-linear-gradient(45deg, #2b4c60 0 3px, #9db3c0 3px 5px); }
+  #legend .dash { background: none; border: 2px dashed #ff5fa2; height: 10px; }
   .ghost { padding: 6px 10px; font-size: 13px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--muted); background: var(--ocean); }
   .ghost:hover { color: var(--ink); border-color: var(--ink); }
   #zoom { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; border: 1.5px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--panel); }
@@ -104,13 +140,12 @@
   @media (pointer: coarse) { #zoom button { width: 42px; height: 42px; } }
 
   /* --- Panneau et planche --- */
-  #panel, #board { min-height: 0; overflow-y: auto; background: var(--panel); border-radius: 6px; scrollbar-width: thin; scrollbar-color: #33505f transparent; }
+  #panel { min-height: 0; overflow-y: auto; background: var(--panel); border-radius: 6px; scrollbar-width: thin; scrollbar-color: #33505f transparent; }
   #panel { padding: 22px 22px 28px; }
-  #board { grid-column: 1 / -1; padding: 24px 28px 32px; }
   .head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
   .head > div:first-child { flex: 1 1 12ch; min-width: 0; }
-  .head h1 { margin: 0; font-size: clamp(26px, 2.4vw, 40px); font-weight: 700; line-height: 1; letter-spacing: -.01em; overflow-wrap: anywhere; }
-  .head .facts { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+  .head h1 { margin: 0; font-size: clamp(26px, 2.4vw, 40px); font-weight: 700; line-height: 1; letter-spacing: -.01em; overflow-wrap: break-word; }
+  .head .facts { flex: 1 1 100%; margin: -4px 0 0; font-size: 14px; color: var(--muted); }
   .head .iso { display: inline-block; margin-top: 8px; padding: 2px 7px; border: 1.5px solid var(--muted); border-radius: 3px; font-size: 13px; color: var(--muted); }
   .head .actions { display: flex; gap: 8px; align-items: center; flex: none; margin-left: auto; }
   .close { font-size: 26px; line-height: 1; color: var(--muted); padding: 0 4px; }
@@ -121,10 +156,42 @@
   details.sub > summary { cursor: pointer; padding: 9px 2px; font-weight: 600; color: var(--ink); list-style-position: inside; }
   details.sub > summary small { margin-left: 8px; color: var(--muted); font-weight: 400; }
   details.sub[open] > summary { margin-bottom: 6px; }
-  #board h2 { font-size: 20px; margin-top: 28px; }
-  #board .grid { columns: 400px; column-gap: 16px; }
-  #board .members { margin-bottom: 20px; }
-  #board .card { break-inside: avoid; }
+  .grid { columns: 320px; column-gap: 14px; }
+  .grid .card { break-inside: avoid; }
+  /* --- Fiche pays : références, confusions, puis une rangée par type d'indice --- */
+  .refs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; align-items: flex-start; }
+  .refs .ghost { padding: 4px 9px; font-size: 14px; color: var(--ink); background: none; }
+  .refs > a { padding: 4px 9px; border: 1.5px dashed var(--line); border-radius: 4px; font-size: 14px; color: var(--ink); text-decoration: none; }
+  .refs > a:hover { border-color: var(--sign); }
+  .refs .lm { padding: 3px 9px; font-size: 14px; }
+  .refs .lm summary { font-size: 14px; font-weight: 400; }
+  .refs .lm[open] { flex-basis: 100%; }
+  .mixline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .mixline .mix-c { color: var(--ink); }
+  .mixline .mix-c b { color: var(--sign); font-weight: 600; }
+  .mixline a { color: var(--muted); font-size: 13px; text-decoration: none; }
+  .mixline a:hover { color: var(--sign); }
+  .mixline .more { margin-left: auto; }
+  section.new { margin-bottom: 6px; }
+  section.new h2 { margin-top: 4px; }
+  section.clue { padding: 9px 0 10px; border-top: 1px solid #274355; }
+  section.clue .top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+  section.clue h3 { margin: 0 auto 0 0; font-size: 16px; font-weight: 600; color: var(--sign); }
+  section.clue .app { padding: 3px 8px; gap: 7px; border-color: #4f7f8f; background: rgba(79,127,143,.22); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  section.clue .app:hover { border-color: var(--sign); background: rgba(79,127,143,.36); }
+  section.clue .acc { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .thumbs .grp { align-self: center; padding: 2px 7px; border: 1px solid #33505f; border-radius: 3px; font-size: 13px; color: var(--muted); }
+  .thumb { display: inline-flex; flex-direction: column; padding: 0; border-radius: 4px; overflow: hidden; background: #16303f; text-align: left; max-width: 100%; }
+  .thumb img { display: block; height: 72px; width: auto; min-width: 72px; max-width: 100%; object-fit: cover; background: #fff; }
+  .thumb.inv-on img { background: var(--inv-bg); }
+  .thumb span { width: 0; min-width: 100%; padding: 3px 6px; font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thumb:hover span { background: #1e3d4f; }
+  @media (min-width: 901px) { #app.w1 .thumb img, #app.w2 .thumb img { height: 120px; min-width: 120px; } }
+  .none a { color: var(--ink); margin-right: 10px; }
+  .none { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid #274355; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  section.clue + .none { margin-top: 0; }
+  #widen svg { display: block; }
   .card { display: block; width: 100%; padding: 0; margin: 0 0 14px; text-align: left; border-radius: 4px; overflow: hidden; background: #fff; }
   .card.inv-on { background: var(--inv-bg); }
   .card img { display: block; width: 100%; height: auto; }
@@ -134,14 +201,9 @@
   .card .cap small { color: var(--muted); font-size: 12px; }
   .card .cap .low { margin-left: auto; color: #e3a35a; font-size: 12px; }
   .card:hover .cap { background: #1e3d4f; }
-  .hint { color: var(--muted); font-size: 15px; line-height: 1.5; margin: 0 0 18px; max-width: 36ch; }
-  .stats { display: flex; gap: 22px; margin: 6px 0 18px; }
-  .stats div { font-size: 34px; font-weight: 700; line-height: 1; }
-  .stats small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); margin-top: 4px; }
   .members { display: flex; flex-wrap: wrap; gap: 6px; }
   .wlegend { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin: 4px 0 8px; }
   .wlegend i { width: 18px; height: 10px; border-radius: 2px; display: inline-block; }
-  .wlegend .mx { border: 2px solid #ff5fa2; background: none; width: 14px; }
   .wlist { display: flex; flex-direction: column; }
   .wrow { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 6px 0; border-bottom: 1px solid var(--line); cursor: pointer; text-align: left; background: none; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); font: inherit; }
   .wrow:hover b { color: var(--sign); }
@@ -149,20 +211,12 @@
   .wrow small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
   .wbar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; grid-column: 1 / -1; }
   .wbar i { display: block; height: 100%; }
-  .res-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
-  .res-row span { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-  .res-row b { font-variant-numeric: tabular-nums; font-weight: 600; }
   .mix h2 { display: flex; align-items: baseline; }
   .mix h2 .more, .mix-via a { color: var(--muted); font-size: 12px; text-decoration: none; }
   .mix h2 .more { margin-left: auto; font-weight: 400; }
   .mix h2 .more:hover, .mix-via a:hover { color: var(--sign); }
-  .mix-row { display: flex; align-items: baseline; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
   .mix-c { padding: 2px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .mix-c:hover { border-color: var(--ink); }
-  .mix-n { color: var(--sign); font-variant-numeric: tabular-nums; }
-  .mix-cmp { color: var(--muted); text-decoration: none; padding: 0 2px; }
-  .mix-cmp:hover { color: var(--sign); }
-  .mix-via { margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; color: var(--muted); font-size: 12px; }
   .members button { padding: 3px 8px; border: 1.5px solid var(--line); border-radius: 3px; font-size: 13px; }
   .members button:hover { border-color: var(--ink); }
   .members button.none { opacity: .5; }
@@ -181,14 +235,9 @@
   /* --- Trainers (accueil) --- */
   .apps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
   .app { display: flex; align-items: baseline; gap: 10px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 4px; color: var(--ink); text-decoration: none; }
-  .app-ext { border-style: dashed; }
   .app:hover { border-color: var(--sign); background: #16303f; }
   .app b { font-weight: 600; font-size: 15px; }
   .app small { color: var(--muted); font-size: 12px; }
-  .country-apps { margin: 2px 0 10px; }
-  .app-row { display: flex; gap: 6px; }
-  .app-row .app { flex: 1; flex-direction: column; gap: 2px; }
-  .app-row .app b { white-space: nowrap; }
   .lm { border: 1.5px dashed var(--line); border-radius: 4px; padding: 6px 10px; }
   .lm summary { cursor: pointer; font-weight: 600; font-size: 15px; color: var(--ink); }
   .lm summary small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
@@ -258,38 +307,44 @@
   #lbmsg { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); color: #e3a35a; font-size: 15px; }
 
   #menuBtn { display: none; }
-  #tools { display: contents; }
+  @media (max-width: 900px) { #widen { display: none; } }
   @media (max-width: 900px) {
-    #app { grid-template-columns: 1fr; grid-template-rows: auto 45% 1fr; }
+    #app { grid-template-columns: 1fr; grid-template-rows: auto auto 45% 1fr; }
   }
   /* --- Téléphone : en-tête compact (☰), types en bande défilante, carte puis panneau dans le flux de la page --- */
   @media (max-width: 700px) {
     html, body { height: auto; overflow: auto; }
     #app { display: block; height: auto; padding: 10px 12px 20px; }
-    header { flex-wrap: nowrap; gap: 6px; position: relative; margin-bottom: 8px; }
+    header { gap: 6px; margin-bottom: 8px; }
     #home { font-size: 19px; padding-right: 4px; }
     #searchBtn { min-width: 0; flex: 1; padding: 7px 10px; }
     #searchBtn span { display: none; }
-    #menuBtn { display: inline-flex; flex: none; padding: 6px 12px; font-size: 18px; border: 1.5px solid var(--line); border-radius: 4px; }
+    #menuBtn { display: grid; }
     #menuBtn.on { border-color: var(--sign); color: var(--sign); }
-    #tools { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; flex-direction: column; align-items: stretch; gap: 6px;
-      background: var(--panel); border: 1.5px solid var(--line); border-radius: 6px; padding: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.45); min-width: 200px; }
+    #tools { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; flex-direction: column; align-items: stretch; gap: 4px; margin: 0;
+      background: var(--panel); border: 1.5px solid var(--line); border-radius: 6px; padding: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.45); min-width: 210px; }
+    #pages { flex-direction: column; }
+    #gear { display: block; order: 2; }
+    #pages a { padding: 9px 8px; border-bottom: 0; border-left: 2px solid transparent; }
+    #pages a[aria-current] { border-left-color: var(--sign); }
+    #settingsBtn { display: none; }
+    #settings, #settings[hidden] { display: block; position: static; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 6px 0 0; min-width: 0; }
+    #settings button[role=switch] { padding: 9px 8px; }
     #tools.open { display: flex; }
-    #tools .chip { justify-content: space-between; margin: 0; }
-    #darkToggle { margin-left: 0; }
-    #chipsRow { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-bottom: 8px; }
-    #chipsRow::-webkit-scrollbar { display: none; }
-    #chipsRow .chip { flex: none; padding: 5px 10px; font-size: 14px; }
+    #clues { flex-wrap: nowrap; overflow-x: auto; margin-bottom: 8px; scrollbar-width: none; }
+    #clues::-webkit-scrollbar { display: none; }
+    #clues .chip { padding: 5px 10px; font-size: 14px; }
+    #colourBy { left: 6px; top: 6px; }
+    #colourBy button { padding: 5px 7px; font-size: 12px; }
     #mapwrap { height: min(46vh, 58vw); min-height: 200px; margin-bottom: 10px; }
     #zoom { right: 8px; bottom: 8px; }
     #legend { left: 6px; bottom: 6px; right: 62px; max-width: none; padding: 4px 7px; font-size: 11px; flex-direction: row; flex-wrap: wrap; gap: 2px 9px; }
     #legend b { display: none; }
     #legend > span { gap: 4px; }
     #legend > span i { width: 10px; }
-    #panel, #board { overflow: visible; }
+    #panel { overflow: visible; }
     #panel { padding: 16px 14px 22px; }
-    #board { padding: 16px 14px 24px; }
-    #board .grid { columns: 1; }
+    .grid { columns: 1; }
     #pbox { top: 8px; width: calc(100vw - 16px); }
     #pinput { font-size: 18px; padding: 12px 14px; }
     #presults { max-height: 70vh; }
@@ -303,32 +358,61 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#12283a">
 <script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
 <!-- /tgm-pwa -->
+<!-- tgm-shell:css -->
+<style id="tgm-shell">
+  /* Généré par tools/shell.py, ne pas modifier à la main */
+  :root {
+    --ocean: #12283a; --panel: #0e2130; --land: #2b4c60; --line: #3b5a6d;
+    --ink: #e6eef2; --muted: #8ea6b4; --sign: #f2c94c;
+    --font: Bahnschrift, "DIN Alternate", "DIN 2014", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
+  }
+  .tgm-bar { display: flex; align-items: center; gap: 10px; min-height: 34px; margin: 0 -16px 14px; padding: 0 20px; font-family: var(--font); }
+  .tgm-home { padding: 2px 10px 2px 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: normal; color: var(--ink); text-decoration: none; }
+  .tgm-tabs { display: flex; gap: 2px; }
+  .tgm-bar .tgm-tabs { margin-left: auto; }
+  .tgm-tabs a { padding: 7px 11px 5px; font-size: 16px; font-weight: 600; line-height: normal; color: var(--muted); text-decoration: none; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tgm-tabs a:hover { color: var(--ink); }
+  .tgm-tabs a[aria-current] { color: var(--ink); border-bottom-color: var(--sign); }
+  @media (max-width: 700px) {
+    .tgm-bar { flex-wrap: wrap; gap: 2px 6px; margin-bottom: 10px; padding: 0 16px; }
+    .tgm-home { font-size: 19px; }
+    .tgm-bar .tgm-tabs { flex: 1 1 100%; margin-left: 0; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
+    .tgm-bar .tgm-tabs::-webkit-scrollbar { display: none; }
+    .tgm-bar .tgm-tabs a { padding: 6px 6px 4px; font-size: 15px; }
+  }
+  /* Formes communes : 4 px pour les contrôles, 6 px pour les surfaces */
+  .wrap button, .wrap select, .wrap input, .wrap textarea { border-radius: 4px; }
+  .wrap .card, .wrap section, .wrap #card, .wrap .bar { border-radius: 6px; }
+</style>
+<!-- /tgm-shell:css -->
 </head>
 <body>
 <div id="app">
   <header>
     <button id="home" title="Home (Esc)">Atlas</button>
     <button id="searchBtn" title="Search (type anywhere)">Search<span>just type</span></button>
-    <span id="chipsRow" style="display:contents"><span id="chips" style="display:contents"></span></span>
-    <button id="menuBtn" aria-label="Menu" aria-expanded="false">☰</button>
+    <button id="menuBtn" aria-label="Menu" aria-expanded="false"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
     <div id="tools">
-    <button id="darkToggle" class="chip"><b>Dark cards</b><span class="n" id="darkState"></span></button>
-    <a id="dailyLink" class="chip" href="daily.html" title="Daily review (2 × 30 min)"><b>Review</b><span class="n">⏱</span></a>
-    <a id="mixLink" class="chip" href="confusions.html" title="Countries you mix up, across trainers"><b>Mix-ups</b><span class="n">⇄</span></a>
-    <button id="weakToggle" class="chip" title="Colour the map by your accuracy in the trainers"><b>Weak spots</b><span class="n" id="weakState"></span></button>
-    <a id="cmpLink" class="chip" href="compare.html" title="Two countries side by side"><b>Compare</b><span class="n">⚖</span></a>
-    <a id="quizLink" class="chip" href="quiz.html" title="Recall the cards, spaced repetition"><b>Quiz</b><span class="n">⟳</span></a>
-    <a id="duelsLink" class="chip" href="games.html" title="Your Duels and Team Duels, place by place (imported from geo-review, stays in this browser)"><b>Duels</b><span class="n">⚔</span></a>
+      <span id="gear">
+        <button id="settingsBtn" aria-label="Settings" aria-expanded="false" title="Settings"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <div id="settings" hidden>
+          <button id="darkToggle" role="switch" aria-checked="true" title="Show light cards in dark colours"><span>Dark cards</span><i></i></button>
+          <button id="labelsToggle" role="switch" aria-checked="true" title="Country codes and names on the map"><span>Map labels</span><i></i></button>
+          <button id="authorToggle" role="switch" aria-checked="false" title="What only the author needs: missing types, low-resolution marks, the To fill in table"><span>Author tools</span><i></i></button>
+        </div>
+      </span>
+      <nav id="pages" class="tgm-tabs" aria-label="Pages"><!-- tgm-shell:tabs --><a href="index.html" aria-current="page" title="Map, countries and cards">Explore</a><a href="daily.html" title="Daily review (2 × 30 min)">Review</a><a href="games.html" title="Your Duels and Team Duels, place by place">Duels</a><a href="confusions.html" title="Countries you mix up, across trainers">Mix-ups</a><a href="quiz.html" title="Recall the cards, spaced repetition">Quiz</a><!-- /tgm-shell:tabs --></nav>
     </div>
   </header>
+  <div id="clues"></div>
   <div id="mapwrap">
     <svg id="map" role="img" aria-label="World map"></svg>
     <div id="tip"></div>
     <div id="legend"></div>
+    <div id="colourBy" role="radiogroup" aria-label="Colour the map by"><button role="radio" data-c="coverage">Coverage</button><button role="radio" data-c="accuracy">My accuracy</button><button role="radio" data-c="frequency">Frequency</button></div>
     <div id="zoom"><button id="zoomIn" aria-label="Zoom in" title="Zoom in (+)">+</button><button id="zoomOut" aria-label="Zoom out" title="Zoom out (−)">−</button><button id="fit" aria-label="Fit" title="Fit the selected country, or the whole world"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
   </div>
   <aside id="panel"></aside>
-  <section id="board"></section>
 </div>
 
 <div id="palette" role="dialog" aria-modal="true">
@@ -393,11 +477,18 @@
     set(k, v) { try { localStorage.setItem('atlas.' + k, JSON.stringify(v)); } catch {} },
   };
   let dark = store.get('dark', true);
+  // Étiquettes de la carte ; outils d'auteur (types manquants, « low res », À compléter) : par défaut sur ce PC seulement
+  const LOCAL = location.protocol === 'file:' || ['localhost', '127.0.0.1', ''].includes(location.hostname);
+  let labelsOn = store.get('labels', true) !== false, author = [true, false].includes(store.get('author', null)) ? store.get('author', null) : LOCAL;
   const invOverride = store.get('inv', {});
   const isInv = c => dark && (c.id in invOverride ? invOverride[c.id] : c.invert);
   const imgCls = c => isInv(c) ? 'inv' : (dark && c.light ? 'dim' : '');
 
-  const state = { country: null, type: null, cluster: null, view: 'map' };
+  const COLOURS = ['coverage', 'accuracy', 'frequency'];
+  // colour : ce que disent les couleurs de la carte ; wide : largeur du panneau (0 étroit, 1 moitié, 2 plein)
+  const state = { country: null, type: null, cluster: null,
+    colour: COLOURS.includes(store.get('colour', null)) ? store.get('colour', null) : store.get('weak', false) === true ? 'accuracy' : 'coverage',
+    wide: [0, 1, 2].includes(store.get('wide', 0)) ? store.get('wide', 0) : 0 };
   let visible = [];
 
   const matchType = c => !state.type || c.types.includes(state.type);
@@ -413,27 +504,27 @@
   const trainerCount = iso => countryApps(iso).length;
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
-  // ---------- En-tête : types, clusters, mode sombre ----------
-  function renderChips() {
-    const f = $('chips');
-    f.innerHTML = '';
-    const base = state.country ? cards.filter(c => c.countries.includes(state.country)) : cards;
+  // ---------- Filtre par type d'indice : toujours tous les types, dans l'ordre de config.json ----------
+  // Le compte suit le contexte (le pays ouvert, sinon tout l'Atlas). Un clic filtre, rien d'autre.
+  const typeCount = (key, iso) => ({
+    cards: cards.filter(c => c.types.includes(key) && (!iso || c.countries.includes(iso))).length,
+    trainers: iso ? countryApps(iso, key).length : apps.filter(a => a.types.includes(key)).length,
+  });
+  function renderClues() {
+    const f = $('clues');
+    f.innerHTML = '<em>Clue</em>';
+    const all = Object.assign(document.createElement('button'), { className: 'chip all' + (state.type ? '' : ' cur'), innerHTML: '<b>All</b>' });
+    all.onclick = () => { state.type = null; update(); };
+    f.appendChild(all);
     for (const t of types) {
-      const n = base.filter(c => c.types.includes(t.key)).length;
-      const tr = state.country ? countryApps(state.country, t.key) : [];
-      if (!n && !tr.length && state.type !== t.key) continue;   // types qui ont des fiches, ou un trainer pour ce pays
+      const here = typeCount(t.key, state.country), any = typeCount(t.key, null);
       const b = document.createElement('button');
-      b.className = 'chip' + (state.type === t.key ? ' on' : '') + (n || tr.length ? '' : ' empty');
-      b.innerHTML = `<b>${t.label}</b><span class="n">${n}${tr.length ? ' ↗' : ''}</span>`;
-      if (tr.length) b.title = `Trainer: ${tr.map(a => a.name.en).join(', ')}`;
-      b.onclick = () => {
-        // un trainer couvre ce pays pour ce type : on l'ouvre (nouvel onglet), et l'Atlas filtre ses fiches s'il en a
-        if (tr.length && state.type !== t.key) window.open(appLink(tr[0], state.country), '_blank', 'noopener');
-        if (!n && tr.length) return;
-        if (state.type === t.key) { state.type = null; state.view = 'map'; }
-        else { state.type = t.key; state.view = state.country ? state.view : 'board'; }
-        update();
-      };
+      b.className = 'chip' + (state.type === t.key ? ' on' : '') + (here.cards || here.trainers ? '' : ' zero');
+      b.dataset.type = t.key;
+      b.disabled = !any.cards && !any.trainers;
+      b.innerHTML = `<b>${t.label}</b><span class="n${!here.cards && here.trainers ? ' tr' : ''}">${here.cards || (here.trainers ? 'trainer' : 0)}</span>`;
+      if (!here.cards && here.trainers) b.title = 'No card, but a trainer covers it';
+      b.onclick = () => { state.type = state.type === t.key ? null : t.key; update(); };
       f.appendChild(b);
     }
     const keys = Object.keys(clusters);
@@ -447,29 +538,40 @@
         f.appendChild(b);
       }
     }
-    $('darkState').textContent = dark ? 'on' : 'off';
-    $('weakState').textContent = weak ? 'on' : 'off';
-    $('weakToggle').classList.toggle('on', weak);
-    $('darkToggle').classList.toggle('on', dark);
+    $('darkToggle').setAttribute('aria-checked', dark);
+    $('labelsToggle').setAttribute('aria-checked', labelsOn);
+    $('authorToggle').setAttribute('aria-checked', author);
   }
   $('darkToggle').onclick = () => { dark = !dark; store.set('dark', dark); update(); };
+  $('labelsToggle').onclick = () => { labelsOn = !labelsOn; store.set('labels', labelsOn); update(); applyVb(); };
+  $('authorToggle').onclick = () => { author = !author; store.set('author', author); update(); };
+  const setSettings = on => { $('settings').hidden = !on; $('settingsBtn').setAttribute('aria-expanded', on); };
+  $('settingsBtn').onclick = e => { e.stopPropagation(); setSettings($('settings').hidden); };
+  document.addEventListener('click', e => { if (!e.target.closest('#settings, #settingsBtn')) setSettings(false); });
 
-  // ---------- Weak spots : tgm.stats (byCountry de chaque trainer) + tgm.confusions ----------
-  let weak = store.get('weak', false);
+  // ---------- Couleurs de la carte : couverture, précision (tgm.stats de chaque trainer + tgm.confusions), fréquence (tiers) ----------
   const APP_NAME = { 'city-placer': 'City Placer', 'phone-codes': 'Phone codes', 'plate-trainer': 'Plates', 'bollards': 'Bollards',
     'sign-reader': 'Sign Reader', 'vietnam': 'Vietnam', 'kabupaten': 'Kabupaten', 'cyrillic': 'Cyrillic', 'clue-fusion': 'Clue Fusion', 'atlas-quiz': 'Card quiz', 'duels': 'Duels' };
   const WMIN = 3;                                   // answers needed before a country gets a colour
   const wBucket = a => a < 0.5 ? 0 : a < 0.65 ? 1 : a < 0.8 ? 2 : a < 0.9 ? 3 : 4;
-  const WCOL = ['#d9614c', '#e8995a', '#e9cf6a', '#9fcb7a', '#5fae7e'];
+  const WCOL = ['#d9663a', '#eda66b', '#cfd6da', '#86b6d6', '#3f86bd'];   // bas → haut, lisible sans distinguer rouge et vert
+  const FCOL = ['#f2c94c', '#b8974a', '#6f7f6a', '#3f6475'];
+  const tierOf = iso => window.TGM && TGM.country(iso) ? TGM.tier(iso) : 0;
+  const tierName = t => (window.TGM && TGM.tierNames[t] ? TGM.tierNames[t].en : '').toLowerCase();
   const pct = a => Math.round(a * 100) + ' %';
-  const WLEGEND = `<div class="wlegend">${WCOL.map(c => `<i style="background:${c}"></i>`).join('')}<span>&lt;50 % → 90 %+ accuracy, all trainers · plain: under ${WMIN} answers</span><i class="mx"></i><span>mixed up in the last 60 days</span></div>`;
-  // Légende posée sur la carte : elle suit ce que les couleurs veulent dire (couverture, un type, ou ta précision)
+  const WLEGEND = '<div class="wlegend">' + ['&lt; 50 %', '50–65', '65–80', '80–90', '90 % +'].map((t, i) => `<span><i style="background:${WCOL[i]}"></i>${t}</span>`).join('') + '</div>';
+  // Légende posée sur la carte : elle suit ce que les couleurs veulent dire, et le sélecteur « Colour by » aussi
   function renderLegend() {
-    const row = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
-    $('legend').innerHTML = weak ? '<b>My accuracy</b>' + WLEGEND
+    const row = (c, t, cls) => `<span><i${cls ? ` class="${cls}"` : ''} style="background:${c}"></i>${t}</span>`;
+    $('legend').innerHTML = state.colour === 'accuracy'
+      ? '<b>My accuracy</b>' + WLEGEND + '<span>accuracy, all trainers together</span>' + `<span><i class="hatch"></i>hatched: under ${WMIN} answers</span>` + '<span><i class="dash"></i>dashed outline: mixed up in the last 60 days</span>'
+      : state.colour === 'frequency'
+      ? '<b>How often in GeoGuessr</b>' + FCOL.map((c, i) => row(c, `Tier ${i + 1} ${tierName(i + 1)}`)).join('') + row('var(--land)', 'not covered')
       : state.type ? `<b>${typeLabel[state.type]}</b>` + row('var(--sign)', '2+ cards') + row('var(--sign-soft)', '1 card, or a trainer') + row('var(--land)', 'nothing yet')
       : '<b>Coverage</b>' + row('var(--sign)', '2+ cards') + row('var(--sign-soft)', '1 card') + row('#4f7f8f', 'trainer only') + row('var(--land)', 'nothing yet');
+    for (const b of $('colourBy').children) b.setAttribute('aria-checked', b.dataset.c === state.colour);
   }
+  for (const b of $('colourBy').children) b.onclick = () => { state.colour = b.dataset.c; store.set('colour', state.colour); update(); };
   let WD = null;
   function weakData() {
     if (WD) return WD;
@@ -488,8 +590,7 @@
     for (const w of Object.values(by)) w.acc = w.seen ? w.correct / w.seen : null;
     return (WD = by);
   }
-  addEventListener('storage', e => { if (e.key && e.key.startsWith('tgm.')) { WD = null; if (weak) update(); } });
-  $('weakToggle').onclick = () => { weak = !weak; store.set('weak', weak); update(); };
+  addEventListener('storage', e => { if (e.key && e.key.startsWith('tgm.')) { WD = null; if (state.colour === 'accuracy' || state.country) update(); } });
   // Liste des points faibles (accueil, mode Weak spots) : précision la plus basse d'abord, pays fréquents en tête à égalité
   function weakEl() {
     const d = weakData();
@@ -515,24 +616,19 @@
     s.appendChild(box);
     return s;
   }
-  // Résultats du pays dans chaque trainer (fiche pays)
-  function resultsEl(iso) {
-    const w = weakData()[iso];
-    if (!w || !w.seen) return null;
-    const s = document.createElement('section');
-    s.innerHTML = `<h2>Your results<a class="more" href="compare.html#${iso.toLowerCase()}">compare →</a></h2>`
-      + Object.entries(w.apps).sort((a, b) => b[1].seen - a[1].seen).map(([a, c]) =>
-        `<div class="res-row">${APP_NAME[a] || a}<span>${c.seen} answer${c.seen > 1 ? 's' : ''}</span><b style="color:${WCOL[wBucket(c.correct / c.seen)]}">${pct(c.correct / c.seen)}</b></div>`).join('')
-      + (Object.keys(w.apps).length > 1 ? `<div class="res-row"><b>All</b><span>${w.seen}</span><b>${pct(w.acc)}</b></div>` : '');
-    s.classList.add('mix');
-    return s;
+  // Précision d'un trainer sur un pays : les stats portent l'identifiant du trainer côté stockage, parfois différent de celui d'apps.json
+  const STAT_OF = { 'plates': 'plate-trainer', 'vietnam-provinces': 'vietnam', 'indonesia-kabupaten': 'kabupaten', 'cyrillic-signs': 'cyrillic' };
+  function appAccuracy(appId, iso) {
+    const w = weakData()[iso], s = w && w.apps[STAT_OF[appId] || appId];
+    return s && s.seen ? s : null;
   }
   $('home').onclick = () => reset();
+  $('pages').querySelector('[aria-current]').onclick = e => { e.preventDefault(); setMenu(false); reset(); };
 
-  function reset() { Object.assign(state, { country: null, type: null, cluster: null, view: 'map' }); update(); }
-  function selectCountry(iso) { pushNext = iso !== state.country; Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); fitTo(iso); }
-  function selectCluster(k) { Object.assign(state, { cluster: k, country: null, view: k ? 'board' : 'map' }); update(); }
-  function selectType(t) { Object.assign(state, { type: t, country: null, cluster: null, view: 'board' }); update(); }
+  function reset() { Object.assign(state, { country: null, type: null, cluster: null }); update(); }
+  function selectCountry(iso) { pushNext = iso !== state.country; Object.assign(state, { country: iso, cluster: null }); update(); fitTo(iso); }
+  function selectCluster(k) { Object.assign(state, { cluster: k, country: null }); update(); }
+  function selectType(t) { Object.assign(state, { type: t, country: null, cluster: null }); update(); }
 
   // ---------- Recherche intelligente ----------
   // Chaque mot de la requête doit correspondre à quelque chose de la fiche :
@@ -598,6 +694,29 @@
     { name: 'Relief', sub: 'topography', f: field(['relief', 'topo', 'topography']),
       href: iso => center(iso) ? `https://opentopomap.org/#map=${center(iso)[2]}/${center(iso)[0]}/${center(iso)[1]}` : null },
   ];
+  // Les autres pages de l'Atlas, avec un ou deux pays quand la page sait les lire (« compare pl cz », « quiz id »)
+  const PAGES = [
+    { label: 'Review', sub: 'daily review', href: 'daily.html', max: 0, f: field(['review', 'daily', 'revision', 'révision']) },
+    { label: 'Duels', sub: 'your duels, place by place', href: 'games.html', max: 1, f: field(['duels', 'duel', 'games', 'parties']) },
+    { label: 'Mix-ups', sub: 'countries you mix up', href: 'confusions.html', max: 1, f: field(['mix', 'mixups', 'mix-ups', 'confusions']) },
+    { label: 'Quiz', sub: 'recall the cards', href: 'quiz.html', max: 1, f: field(['quiz']) },
+    { label: 'Compare', sub: 'two countries side by side', href: 'compare.html', max: 2, f: field(['compare', 'comparer', 'vs']) },
+  ];
+  const countryOf = q => { let b = null, bs = 4.4; for (const iso in countryField) { const s = tokScore(q, countryField[iso]) + (hasContent(iso) ? 0.2 : 0); if (s > bs) { bs = s; b = iso; } } return b; };
+  function pageResults(qs) {
+    const out = [];
+    for (const P of PAGES) {
+      const rest = qs.filter(q => tokScore(q, P.f) < 4.5);
+      if (rest.length === qs.length || rest.length > P.max) continue;
+      const isos = rest.map(countryOf);
+      if (isos.includes(null)) continue;
+      const names = isos.map(nameOf), hash = isos.length ? '#' + isos.map(i => i.toLowerCase()).join('/') : '';
+      const label = P.label !== 'Compare' ? P.label + (names.length ? ' · ' + names[0] : '')
+        : names.length === 2 ? `Compare ${names[0]} and ${names[1]}` : names.length ? `Compare ${names[0]} with…` : 'Compare';
+      out.push({ kind: 'page', label, sub: P.sub, href: P.href + hash });
+    }
+    return out;
+  }
   // Chaque mot va à la chose (trainer, lien) ou au pays ; il en faut au moins un de chaque côté
   function splitMatch(qs, fThing, fCountry) {
     let s = 0, a = 0, c = 0;
@@ -634,6 +753,7 @@
       if (pairs.length) refRes.push(...best(pairs, 1));
     }
     refRes = refRes.sort((x, y) => y.s - x.s).slice(0, 2);
+    const pageRes = pageResults(qs);
     let countries = [], others = [];
     const cScore = iso => (countAll(iso) ? 1 : 0) + (trainerCount(iso) ? 0.5 : 0);
     for (const iso in countryField) { const s = scoreAll(qs, [countryField[iso]]); if (s) countries.push({ kind: 'country', s: s + cScore(iso), iso }); }
@@ -642,20 +762,20 @@
     // Le pays d'un trainer ou d'un lien trouvé (« bollard france » → France) figure aussi dans la liste
     for (const r of [...appRes, ...refRes]) if (r.iso && !countries.some(c => c.iso === r.iso)) countries.push({ kind: 'country', s: r.s, iso: r.iso });
     // Rien de complet : on montre ce que chaque mot a trouvé seul (« phone bg » → Bulgarie, Bangladesh, Indicatifs tél.)
-    if (!cardRes.length && !appRes.length && !refRes.length && !countries.length && !others.length) {
+    if (!cardRes.length && !appRes.length && !refRes.length && !pageRes.length && !countries.length && !others.length) {
       for (const q of qs) {
         for (const iso in countryField) { const s = tokScore(q, countryField[iso]); if (s >= 2) countries.push({ kind: 'country', s: s + cScore(iso), iso }); }
         for (const t of types) { const s = tokScore(q, typeField[t.key]); if (s >= 3) others.push({ kind: 'type', s, key: t.key }); }
       }
     }
     // Un pays sans fiche ni trainer n'apporte rien dès qu'il y a mieux à montrer
-    if (cardRes.length || appRes.length || refRes.length || countries.some(c => hasContent(c.iso))) countries = countries.filter(c => hasContent(c.iso));
+    if (cardRes.length || appRes.length || refRes.length || pageRes.length || countries.some(c => hasContent(c.iso))) countries = countries.filter(c => hasContent(c.iso));
     countries.sort((a, b) => b.s - a.s); others.sort((a, b) => b.s - a.s);
     // La requête est un nom de pays, rien d'autre : sa page passe devant ses fiches
     const justCountry = countries.length && qs.every(q => tokScore(q, countryField[countries[0].iso]) >= 4.5);
     const group = (label, list) => list.map(r => Object.assign(r, { group: label }));
     const C = group('Countries', countries.slice(0, 3)), K = group('Cards', cardRes), T = group('Trainers', appRes), R = group('References', refRes);
-    return [...(justCountry ? [...C, ...K, ...T] : [...K, ...T, ...C]), ...R, ...group('Filters', others.slice(0, 3))];
+    return [...(justCountry ? [...C, ...K, ...T] : [...K, ...T, ...C]), ...R, ...group('Pages', pageRes), ...group('Filters', others.slice(0, 3))];
   }
 
   // ---------- Palette ----------
@@ -696,6 +816,8 @@
         b.innerHTML = `<span class="ico go">↗</span><span class="txt">${r.a.name.en}${r.iso ? ' · ' + nameOf(r.iso) : ''}<small>trainer · ${r.a.types.map(t => typeLabel[t]).join(', ')}${r.a.status === 'wip' ? ' · in progress' : ''}</small></span>`;
       } else if (r.kind === 'ref') {
         b.innerHTML = `<span class="ico ext">↗</span><span class="txt">${r.name} · ${nameOf(r.iso)}<small>${r.sub}</small></span>`;
+      } else if (r.kind === 'page') {
+        b.innerHTML = `<span class="ico">page</span><span class="txt">${r.label}<small>${r.sub}</small></span>`;
       } else if (r.kind === 'country') {
         b.innerHTML = `<span class="ico">${r.iso}</span><span class="txt">${nameOf(r.iso)}<small>${countrySub(r.iso)}</small></span>`;
       } else {
@@ -716,6 +838,7 @@
     closePalette();
     if (r.kind === 'card') openLb(r.c, list);
     else if (r.kind === 'app' || r.kind === 'ref') window.open(r.href, '_blank', 'noopener');   // nouvel onglet, comme depuis la fiche pays
+    else if (r.kind === 'page') location.href = r.href;
     else if (r.kind === 'country') openCountry(r.iso);
     else if (r.kind === 'type') selectType(r.key);
     else selectCluster(r.key);
@@ -732,12 +855,6 @@
   $('searchBtn').onclick = () => openPalette();
   // Téléphone : menu ☰ (Dark cards, Review, Mix-ups, Weak spots, Compare) ; la bande des types sort de l'en-tête
   const PHONE = matchMedia('(max-width: 700px)');
-  const placeChips = () => {
-    const row = $('chipsRow'), hdr = row.parentElement === document.querySelector('header');
-    if (PHONE.matches && hdr) { row.removeAttribute('style'); document.querySelector('header').after(row); }
-    else if (!PHONE.matches && !hdr) { row.style.display = 'contents'; $('searchBtn').after(row); }
-  };
-  placeChips(); PHONE.addEventListener('change', placeChips);
   const setMenu = on => { $('tools').classList.toggle('open', on); $('menuBtn').classList.toggle('on', on); $('menuBtn').setAttribute('aria-expanded', on); };
   $('menuBtn').onclick = e => { e.stopPropagation(); setMenu(!$('tools').classList.contains('open')); };
   document.addEventListener('click', e => { if (!e.target.closest('#tools, #menuBtn')) setMenu(false); });
@@ -749,7 +866,7 @@
   function openCountry(iso, fit = true) {
     pushNext = iso !== state.country;
     store.set('recent', [iso, ...recent().filter(k => k !== iso)].slice(0, 5));
-    Object.assign(state, { country: iso, cluster: null, type: null, view: 'map' });
+    Object.assign(state, { country: iso, cluster: null, type: null });
     update();
     if (fit) fitTo(iso);
   }
@@ -778,8 +895,47 @@
   };
   const whenIdle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 1500 }) : f => setTimeout(f, 300);
   if (document.readyState === 'complete') whenIdle(loadRelief); else addEventListener('load', () => whenIdle(loadRelief));
+  // Hachures : pays avec trop peu de réponses pour une couleur de précision
+  const defs = document.createElementNS(SVGNS, 'defs');
+  defs.innerHTML = '<pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#2b4c60"/><rect width="1.6" height="5" fill="#9db3c0"/></pattern>';
+  svg.insertBefore(defs, g);
   const dots = document.createElementNS(SVGNS, 'g');
   g.appendChild(dots);
+  // Étiquettes : code ISO quand le pays est assez grand à l'écran, nom entier quand il y a la place ; taille constante à l'écran
+  const labels = document.createElementNS(SVGNS, 'g');
+  g.appendChild(labels);
+  const labelOf = {};
+  for (const c of W.countries) {
+    const t = document.createElementNS(SVGNS, 'text');
+    t.dataset.iso = c.iso; t.style.display = 'none';
+    labels.appendChild(t); labelOf[c.iso] = t;
+  }
+  // Les pays GeoGuessr d'abord, les grands avant les petits ; une étiquette qui en chevaucherait une autre n'est pas posée
+  let labelOrder = null;
+  const orderLabels = () => W.countries.filter(c => !c.small).map(c => c.iso)
+    .sort((x, y) => !!(window.TGM && TGM.country(y)) - !!(window.TGM && TGM.country(x)) || (mainBox(y) ? mainBox(y).w * mainBox(y).h : 0) - (mainBox(x) ? mainBox(x).w * mainBox(x).h : 0));
+  function paintLabels(s) {                       // s : unités de carte par pixel d'écran
+    const PX = 12, placed = [];
+    labels.style.fontSize = (PX * s).toFixed(3) + 'px';
+    labels.style.strokeWidth = (3 * s).toFixed(3) + 'px';
+    for (const iso in labelOf) labelOf[iso].style.display = 'none';
+    if (!labelsOn) return;
+    for (const iso of (labelOrder = labelOrder || orderLabels())) {
+      const b = mainBox(iso);
+      if (!b || b.x + b.w < vb.x || b.x > vb.x + vb.w || b.y + b.h < vb.y || b.y > vb.y + vb.h) continue;
+      const wpx = b.w / s, hpx = b.h / s, known = !!(window.TGM && TGM.country(iso)), name = nameOf(iso);
+      if (wpx < (known ? 28 : 60) || hpx < (known ? 16 : 34)) continue;
+      const text = wpx >= name.length * PX * 0.62 + 14 ? name : iso;
+      const w = (text.length * PX * 0.62 + 6) * s, h = (PX + 4) * s, x = b.x + b.w / 2, y = b.y + b.h / 2;
+      const r = { x0: x - w / 2, x1: x + w / 2, y0: y - h / 2, y1: y + h / 2 };
+      if (placed.some(q => r.x0 < q.x1 && r.x1 > q.x0 && r.y0 < q.y1 && r.y1 > q.y0)) continue;
+      placed.push(r);
+      const t = labelOf[iso];
+      t.textContent = text; t.setAttribute('x', x); t.setAttribute('y', y);
+      t.classList.toggle('on-light', state.country === iso);
+      t.style.display = '';
+    }
+  }
   for (const c of W.countries.filter(c => c.small)) {
     const d = document.createElementNS(SVGNS, 'circle');
     d.setAttribute('cx', c.c[0]); d.setAttribute('cy', c.c[1]); d.dataset.iso = c.iso;
@@ -788,25 +944,32 @@
 
   function paintMap() {
     const inCluster = new Set(state.cluster ? clusters[state.cluster].countries : []);
+    const mode = state.colour;
     for (const iso in shapes) {
       // un type choisi : un pays couvert par un trainer de ce type (ex. phone-codes) compte comme couvert
       const n = countryCards(iso).length || (state.type && countryApps(iso, state.type).length ? 1 : 0);
-      const w = weak ? weakData()[iso] : null, wb = w && w.seen >= WMIN ? wBucket(w.acc) : -1;
-      const tr = weak || state.type ? 0 : trainerCount(iso);
+      const cov = mode === 'coverage';
+      const w = mode === 'accuracy' ? weakData()[iso] : null, wb = w && w.seen >= WMIN ? wBucket(w.acc) : -1;
+      const few = !!(w && w.seen > 0 && w.seen < WMIN);
+      const tier = mode === 'frequency' ? tierOf(iso) : 0;
+      const tr = cov && !state.type ? trainerCount(iso) : 0;
       for (const el of shapes[iso]) {
-        el.classList.toggle('c1', !weak && n === 1);
-        el.classList.toggle('c2', !weak && n >= 2);
-        el.classList.toggle('t1', !n && tr > 0);
+        el.classList.toggle('c1', cov && n === 1);
+        el.classList.toggle('c2', cov && n >= 2);
+        el.classList.toggle('t1', cov && !n && tr > 0);
         for (let i = 0; i < 5; i++) el.classList.toggle('w' + i, wb === i);
+        el.classList.toggle('wfew', few);
+        for (let i = 1; i <= 4; i++) el.classList.toggle('f' + i, tier === i);
         el.classList.toggle('wmix', !!(w && w.mix));
         el.classList.toggle('sel', state.country === iso);
         el.classList.toggle('incluster', inCluster.has(iso));
       }
-      if (shapes[iso][1]) shapes[iso][1].style.display = n || tr || wb >= 0 || state.country === iso || inCluster.has(iso) ? '' : 'none';
+      if (shapes[iso][1]) shapes[iso][1].style.display = (cov && (n || tr)) || wb >= 0 || few || tier || state.country === iso || inCluster.has(iso) ? '' : 'none';
     }
   }
 
   let vb = { x: 0, y: 0, w: W.w, h: W.h };
+  const boxes = {};                            // boîtes des pays (mainBox), calculées à la demande
   let shown = { ...vb }, commitT = 0;
   const wrapRect = () => svg.parentElement.getBoundingClientRect();
   const fitOf = (v, r) => { const s = Math.max(v.w / r.width, v.h / r.height); return { s, ox: (r.width * s - v.w) / 2, oy: (r.height * s - v.h) / 2 }; };
@@ -819,6 +982,7 @@
     svg.style.setProperty('--sw', (0.6 * s).toFixed(3));   // trait constant à l'écran, sans vector-effect
     const r = Math.max(1.2, 5 * vb.w / W.w);
     for (const d of dots.children) d.setAttribute('r', r);
+    paintLabels(s);
   };
   // Pendant un geste : transform CSS de shown vers vb (aucun re-rendu SVG), puis applyVb au repos
   const previewVb = () => {
@@ -838,7 +1002,6 @@
     applyVb();
   }
   // Boîte du plus grand morceau d'un pays (la France sans la Guyane, les États-Unis sans Hawaï) ; un point pour les tout petits
-  const boxes = {};
   function mainBox(iso) {
     if (iso in boxes) return boxes[iso];
     const c = W.countries.find(c => c.iso === iso);
@@ -906,8 +1069,9 @@
       tip.style.display = 'block';
       tip.style.left = (e.clientX - r.left) + 'px';
       tip.style.top = (e.clientY - r.top) + 'px';
-      const w = weak ? weakData()[iso] : null;
-      tip.innerHTML = weak
+      const w = state.colour === 'accuracy' ? weakData()[iso] : null, tier = tierOf(iso);
+      tip.innerHTML = state.colour === 'frequency' ? `${nameOf(iso)}<span>${tier ? `Tier ${tier} ${tierName(tier)}` : 'not covered'}</span>`
+        : state.colour === 'accuracy'
         ? `${nameOf(iso)}<span>${w && w.seen ? `${pct(w.acc)} over ${w.seen} answer${w.seen > 1 ? 's' : ''}` : 'not played yet'}${w && w.mix ? ` · ${w.mix} mix-up${w.mix > 1 ? 's' : ''}` : ''}</span>`
         : `${nameOf(iso)}<span>${k ? plural(k, 'trainer') + ' · ' : ''}${n ? plural(n, 'card') : 'no card'}${tr.length ? ' · trainer ↗' : ''}</span>`;
     } else tip.style.display = 'none';
@@ -927,7 +1091,7 @@
   window.addEventListener('resize', applyVb);
 
   // ---------- Fiches ----------
-  function cardEl(c, context, board) {
+  function cardEl(c, context, flat) {
     const b = document.createElement('button');
     const inv = isInv(c);
     b.className = 'card' + (inv ? ' inv-on' : '');
@@ -937,9 +1101,9 @@
     let others = c.cluster ? clusters[c.cluster].label
       : c.world ? 'World'
       : c.countries.filter(x => x !== context).map(nameOf).join(', ');
-    if (board) { [title, others, context] = state.country ? [what, '', null] : [where, what, null]; }
+    if (flat) [title, others, context] = [where, c.title || what, null];     // plusieurs pays dans la même grille : le pays d'abord
     b.innerHTML = `<img loading="lazy" decoding="async" class="${imgCls(c)}" src="${enc(c.thumb)}" width="${c.w}" height="${c.h}" alt="">`
-      + `<span class="cap">${title}${others ? `<small>${context ? 'also ' : ''}${others}</small>` : ''}${c.lowres ? '<span class="low">low res</span>' : ''}</span>`;
+      + `<span class="cap">${title}${others ? `<small>${context ? 'also ' : ''}${others}</small>` : ''}${author && c.lowres ? '<span class="low">low res</span>' : ''}</span>`;
     b.onclick = () => openLb(c);
     visible.push(c);
     return b;
@@ -970,13 +1134,14 @@
   function header(title, sub, actions, facts) {
     const h = document.createElement('div');
     h.className = 'head';
-    h.innerHTML = `<div><h1>${title}</h1>${facts ? `<p class="facts">${facts.join(' · ')}</p>` : sub ? `<span class="iso">${sub}</span>` : ''}</div>`;
+    h.innerHTML = `<div><h1>${title}</h1>${!facts && sub ? `<span class="iso">${sub}</span>` : ''}</div>`;
     const a = Object.assign(document.createElement('div'), { className: 'actions' });
     for (const [label, fn, cls] of actions) {
       const b = Object.assign(document.createElement('button'), { className: cls || 'ghost', textContent: label });
       b.onclick = fn; a.appendChild(b);
     }
     h.appendChild(a);
+    if (facts) h.appendChild(Object.assign(document.createElement('p'), { className: 'facts', textContent: facts.join(' · ') }));
     return h;
   }
   // Résumé d'un pays en une ligne : code, continent et tier s'il est dans countries.json, puis ce que l'Atlas a sur lui
@@ -988,6 +1153,8 @@
       f.push(`Tier ${t}${tn ? ' ' + tn.en.toLowerCase() : ''}`);
     }
     f.push(plural(countAll(iso), 'card'), plural(trainerCount(iso), 'trainer'));
+    const w = weakData()[iso];
+    if (w && w.seen) f.push(`${pct(w.acc)} over ${plural(w.seen, 'answer')}`);
     if (state.type) f.push(typeLabel[state.type] + ' only');
     return f;
   }
@@ -1011,54 +1178,29 @@
     return m;
   }
 
-  function selectionCards() {
-    let list;
-    if (state.country) list = countryCards(state.country);
-    else if (state.cluster) list = cards.filter(c => (c.cluster === state.cluster || c.countries.some(i => clusters[state.cluster].countries.includes(i))) && matchType(c));
-    else list = cards.filter(matchType);
-    const where = c => c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-    return list.sort((a, b) => where(a).localeCompare(where(b), 'fr') || a.title.localeCompare(b.title, 'fr'));
-  }
-
-  function fillBoard(root) {
-    // Un pays : rangé par type, les sous-dossiers en sections repliables
-    if (state.country && countryCards(state.country).some(c => c.group)) return fillSelection(root, true);
-    const list = selectionCards();
-    if (!list.length) return root.appendChild(empty('No card for this selection.'));
-    const grid = Object.assign(document.createElement('div'), { className: 'grid' });
-    list.forEach(c => grid.appendChild(cardEl(c, null, true)));
-    root.appendChild(grid);
-  }
-
   function fillSelection(root, grid) {
     const add = el => el && root.appendChild(el);
-    if (state.country) {
-      const iso = state.country;
-      add(countryTrainersEl(iso, state.type));
-      if (!state.type) { add(mixEl(iso)); add(resultsEl(iso)); }
-      const list = countryCards(iso);
-      if (!list.length) return add(empty(state.type
-        ? `No “${typeLabel[state.type]}” card for this country.`
-        : `No card for this country yet. Put it in images\\${iso} ${nameOf(iso)}\\<type>\\ and run build.cmd.`));
-      for (const [t, l] of groupBy(list.filter(c => !c.cluster), c => [c.types[0]])) add(section(typeLabel[t], l, iso, null, grid));
-      for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
-      return;
-    }
+    if (state.country) return countrySheet(root, state.country);
+    // Un cluster ou un type sur tous les pays : une seule grille, rangée par pays
+    const where = c => c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
+    let list;
     if (state.cluster) {
-      const cl = clusters[state.cluster];
       add(membersEl());
-      add(section('Cluster cards', cards.filter(c => c.cluster === state.cluster && matchType(c)), null, 'group-cluster', grid));
-      for (const iso of cl.countries) add(section(nameOf(iso), countryCards(iso).filter(c => !c.cluster), iso, null, grid));
-      return;
-    }
-    if (state.type) {
-      const list = cards.filter(matchType);
-      if (!list.length) return add(empty('No card of this type yet.'));
-      add(section('World', list.filter(c => c.world), null, null, grid));
-      for (const [k, l] of groupBy(list.filter(c => c.cluster), c => [c.cluster])) add(section(clusters[k].label, l, null, 'group-cluster', grid));
-      const byCountry = groupBy(list.filter(c => !c.cluster && !c.world), c => c.countries);
-      [...byCountry.keys()].sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'en'))
-        .forEach(iso => add(section(nameOf(iso), byCountry.get(iso), iso, null, grid)));
+      list = cards.filter(c => (c.cluster === state.cluster || c.countries.some(i => clusters[state.cluster].countries.includes(i))) && matchType(c));
+    } else list = cards.filter(matchType);
+    if (!list.length) return add(empty(state.type ? `No “${typeLabel[state.type]}” card yet.` : 'No card for this selection.'));
+    list.sort((a, b) => (b.cluster === state.cluster && !!state.cluster) - (a.cluster === state.cluster && !!state.cluster) || where(a).localeCompare(where(b), 'en') || a.title.localeCompare(b.title, 'fr'));
+    const box = Object.assign(document.createElement('div'), { className: 'grid' });
+    list.forEach(c => box.appendChild(cardEl(c, null, true)));
+    root.appendChild(box);
+    // Les trainers de ce type, pour les pays sans fiche
+    if (state.type && !state.cluster) {
+      const tr = apps.filter(a => a.types.includes(state.type));
+      if (tr.length) {
+        const p = Object.assign(document.createElement('p'), { className: 'none', textContent: 'Trainers for this clue: ' });
+        tr.forEach(a => p.appendChild(extLink('', a.url, a.name.en + ' ↗')));
+        root.insertBefore(p, box);
+      }
     }
   }
 
@@ -1076,68 +1218,54 @@
     const t = selectionTitle();
     if (t) {
       panel.appendChild(header(t[0], t[1], [
-        ...(state.country ? [['Compare', () => { location.href = 'compare.html#' + state.country.toLowerCase(); }]] : []),
-        ...(state.country && countAll(state.country) ? [['Quiz', () => { location.href = 'quiz.html#' + state.country.toLowerCase(); }]] : []),
-        ['Board', () => { state.view = 'board'; update(); }],
         closeBtn(() => { state.country = state.cluster = null; if (!state.country) state.type = null; update(); }),
       ], state.country ? countryFacts(state.country) : null));
-      fillSelection(panel, false);
+      panel.querySelector('.head .close').before(widenBtn());
+      fillSelection(panel, true);
       return;
     }
     panel.appendChild(header('Atlas', null, []));
-    const nCountries = new Set(cards.flatMap(c => c.countries)).size;
-    const st = Object.assign(document.createElement('div'), { className: 'stats' });
-    st.innerHTML = `<div>${cards.length}<small>cards</small></div><div>${nCountries}<small>countries covered</small></div>`;
-    panel.appendChild(st);
-    if (weak) panel.appendChild(weakEl());
+    const nw = newEl();
+    nw && panel.appendChild(nw);
+    if (state.colour === 'accuracy') panel.appendChild(weakEl());
     const tr = trainersEl();
     tr && panel.appendChild(tr);
-    const gp = gapsEl();
+    const gp = author ? gapsEl() : null;
     gp && panel.appendChild(gp);
     const w = section('World', cards.filter(c => c.world));
     w && panel.appendChild(w);
   }
 
-  // Trainers d'un pays (filtrés par type si un type est choisi), en tête de la fiche pays
-  function countryTrainersEl(iso, type) {
-    const list = countryApps(iso, type);
-    const plonk = !type && plonkitLink(iso);
-    const sv = !type && (window.SV_CENTER || {})[iso];
-    const lm = !type ? (window.LEARNABLE || []).filter(m => m[2].split(' ').includes(iso)) : [];
-    if (!list.length && !plonk && !sv && !lm.length) return null;
-    const box = Object.assign(document.createElement('div'), { className: 'apps country-apps' });
-    list.forEach(a => {
-      const l = Object.assign(document.createElement('a'), { className: 'app', href: appLink(a, iso), target: '_blank', rel: 'noopener' });
-      l.innerHTML = '<b></b><small></small>';
-      l.querySelector('b').textContent = `${a.name.en} ↗`;
-      l.querySelector('small').textContent = a.types.map(t => typeLabel[t]).join(', ');
-      box.appendChild(l);
-    });
-    // Plonk It et Street View côte à côte (liens externes, bordure pointillée)
-    const row = Object.assign(document.createElement('div'), { className: 'app-row' });
-    if (plonk) {
-      const l = Object.assign(document.createElement('a'), { className: 'app app-ext', href: plonk, target: '_blank', rel: 'noopener' });
-      l.innerHTML = '<b>Plonk It ↗</b><small>country guide</small>';
-      row.appendChild(l);
+  // ---------- Fiche pays : références, confusions, puis une rangée par type d'indice (fiches + trainers + précision) ----------
+  const effWide = () => !selectionTitle() ? 0 : state.country ? state.wide : Math.max(state.wide, 1);   // un type sur tous les pays a besoin de place
+  function widenBtn() {
+    const b = Object.assign(document.createElement('button'), { id: 'widen', className: 'ghost' });
+    const next = (effWide() + 1) % 3 < (state.country ? 0 : 1) ? 1 : (effWide() + 1) % 3;
+    b.setAttribute('aria-label', 'Panel width');
+    b.title = ['Narrow panel', 'Half-width panel', 'Full-width panel (hides the map)'][next];
+    b.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="14" aria-hidden="true"><path d="M5 4 1.5 8 5 12M11 4l3.5 4L11 12M1.5 8h13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    b.onclick = () => { state.wide = next; store.set('wide', next); update(); };
+    return b;
+  }
+  const extLink = (cls, href, text, title) => { const l = Object.assign(document.createElement('a'), { className: cls, href, target: '_blank', rel: 'noopener', textContent: text }); if (title) l.title = title; return l; };
+  function refsEl(iso) {
+    const box = Object.assign(document.createElement('div'), { className: 'refs' });
+    const plonk = plonkitLink(iso), c = center(iso);
+    // Pages de l'Atlas sur ce pays (bord plein), puis liens externes (pointillé, ↗)
+    const go = (label, href, title) => { const b = Object.assign(document.createElement('button'), { className: 'ghost', textContent: label, title }); b.onclick = () => { location.href = href; }; box.appendChild(b); };
+    go('Compare', 'compare.html#' + iso.toLowerCase(), 'Side by side with another country');
+    if (countAll(iso)) go('Quiz', 'quiz.html#' + iso.toLowerCase(), 'Recall the cards of this country');
+    if (plonk) box.appendChild(extLink('', plonk, 'Plonk It ↗', 'Country guide'));
+    if (c) {
+      box.appendChild(extLink('', `https://www.google.com/maps/@${c[0]},${c[1]},${c[2]}z/data=!5m1!1e5`, 'Street View ↗', 'Street View coverage of the country'));
+      box.appendChild(extLink('', `https://opentopomap.org/#map=${c[2]}/${c[0]}/${c[1]}`, 'Relief ↗', 'Topographic map'));
     }
-    if (sv) {
-      // Google Maps avec le calque de couverture Street View (data=!5m1!1e5)
-      const l = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
-        href: `https://www.google.com/maps/@${sv[0]},${sv[1]},${sv[2]}z/data=!5m1!1e5` });
-      l.innerHTML = '<b>Street View ↗</b><small>country coverage</small>';
-      row.appendChild(l);
-      // Carte topographique : OpenTopoMap (courbes de niveau, relief ombré), même centre et zoom
-      const r = Object.assign(document.createElement('a'), { className: 'app app-ext', target: '_blank', rel: 'noopener',
-        href: `https://opentopomap.org/#map=${sv[2]}/${sv[0]}/${sv[1]}` });
-      r.innerHTML = '<b>Relief ↗</b><small>topography</small>';
-      row.appendChild(r);
-    }
-    if (row.children.length) box.appendChild(row);
     // Maps LearnableMeta du pays (GeoGuessr) : jouer, ou ouvrir la liste des metas
+    const lm = (window.LEARNABLE || []).filter(m => m[2].split(' ').includes(iso));
     if (lm.length) {
       const order = { B: 0, I: 1, A: 2 }, lvName = { B: 'beginner', I: 'intermediate', A: 'advanced' };
       const d = Object.assign(document.createElement('details'), { className: 'lm' });
-      d.innerHTML = `<summary>LearnableMeta maps<small>${lm.length} GeoGuessr map${lm.length > 1 ? 's' : ''} for ${nameOf(iso)}</small></summary><ul></ul>`;
+      d.innerHTML = `<summary title="GeoGuessr maps of LearnableMeta for ${nameOf(iso)}">LearnableMeta <small>${lm.length}</small></summary><ul></ul>`;
       [...lm].sort((a, b) => order[a[1]] - order[b[1]] || a[3].localeCompare(b[3])).forEach(m => {
         const li = document.createElement('li');
         li.innerHTML = `<span class="lv" title="${lvName[m[1]] || ''}">${m[1]}</span><a target="_blank" rel="noopener" href="https://www.geoguessr.com/maps/${m[0]}"></a><a class="ml" target="_blank" rel="noopener" href="https://learnablemeta.com/maps/${m[0]}">metas ↗</a>`;
@@ -1148,34 +1276,105 @@
     }
     return box;
   }
-
-  // Confusions croisées (tgm.confusions, écrites par les trainers sur ce navigateur) : les pays pris pour celui-ci, ou l'inverse
-  function mixEl(iso) {
+  // Confusions croisées (tgm.confusions, écrites par les trainers sur ce navigateur), en une ligne
+  function mixLine(iso) {
     if (!window.TGM || !TGM.confusions) return null;
-    const pairs = TGM.confusions.pairs({ iso }).slice(0, 6);
+    const pairs = TGM.confusions.pairs({ iso }).slice(0, 4);
     if (!pairs.length) return null;
-    const s = Object.assign(document.createElement('section'), { className: 'mix' });
-    s.innerHTML = `<h2>Mixed up with<a class="more" href="confusions.html#${iso.toLowerCase()}">all mix-ups →</a></h2>`;
-    for (const p of pairs) {
-      const other = p.a === iso ? p.b : p.a;
-      const row = Object.assign(document.createElement('div'), { className: 'mix-row' });
+    const p = Object.assign(document.createElement('p'), { className: 'mixline', textContent: 'Mixed up with' });
+    for (const x of pairs) {
+      const other = x.a === iso ? x.b : x.a;
       const b = Object.assign(document.createElement('button'), { className: 'mix-c', title: 'Open its page' });
-      b.textContent = `${TGM.flag(other)} ${nameOf(other)}`;
+      b.innerHTML = `${TGM.flag(other)} ${nameOf(other)} <b>×${x.n}</b>`;
       b.onclick = () => selectCountry(other);
-      row.appendChild(b);
-      row.appendChild(Object.assign(document.createElement('span'), { className: 'mix-n', textContent: `×${p.n}` }));
-      const via = Object.assign(document.createElement('span'), { className: 'mix-via' });
-      Object.entries(p.byApp).sort((x, y) => y[1] - x[1]).forEach(([app, n]) => {
-        const href = TGM.confusions.link(app, iso), info = TGM.confusions.apps[app];
-        const l = Object.assign(document.createElement(href ? 'a' : 'span'), { textContent: `${info ? info.name : app} ${n}` });
-        if (href) Object.assign(l, { href, target: '_blank', rel: 'noopener', title: `Explore ${nameOf(iso)} in ${info.name}` });
-        via.appendChild(l);
-      });
-      const cmp = Object.assign(document.createElement('a'), { className: 'mix-cmp', href: `compare.html#${iso.toLowerCase()}/${other.toLowerCase()}`,
-        title: `${nameOf(iso)} and ${nameOf(other)} side by side`, textContent: '⚖' });
-      row.appendChild(via); row.appendChild(cmp);
-      s.appendChild(row);
+      p.appendChild(b);
+      p.appendChild(Object.assign(document.createElement('a'), { href: `compare.html#${iso.toLowerCase()}/${other.toLowerCase()}`, textContent: 'compare', title: `${nameOf(iso)} and ${nameOf(other)} side by side` }));
     }
+    p.appendChild(Object.assign(document.createElement('a'), { className: 'more', href: `confusions.html#${iso.toLowerCase()}`, textContent: 'all →' }));
+    return p;
+  }
+  function thumbEl(c) {
+    const b = document.createElement('button');
+    const full = c.title || c.types.map(t => typeLabel[t]).join(', ');
+    const also = c.cluster ? clusters[c.cluster].label : c.countries.length > 1 ? c.countries.map(nameOf).join(', ') : '';
+    b.className = 'thumb' + (isInv(c) ? ' inv-on' : '');
+    b.title = full + (also ? ` (${also})` : '');
+    b.innerHTML = `<img loading="lazy" decoding="async" class="${imgCls(c)}" src="${enc(c.thumb)}" alt=""><span></span>`;
+    b.querySelector('span').textContent = full;
+    b.onclick = () => openLb(c);
+    if (!visible.includes(c)) visible.push(c);            // une fiche à deux types n'apparaît qu'une fois dans la visionneuse
+    return b;
+  }
+  function trainerLink(a, iso) {
+    const l = extLink('app', appLink(a, iso), '', a.status === 'wip' ? 'In progress' : `Explore ${nameOf(iso)} in ${a.name.en}`);
+    l.appendChild(Object.assign(document.createElement('span'), { textContent: `${a.name.en} ↗` }));
+    const s = appAccuracy(a.id, iso);
+    if (s && s.seen >= WMIN) {
+      const acc = Object.assign(document.createElement('b'), { className: 'acc', textContent: pct(s.correct / s.seen), title: plural(s.seen, 'answer') });
+      acc.style.color = WCOL[wBucket(s.correct / s.seen)];
+      l.appendChild(acc);
+    }
+    return l;
+  }
+  function countrySheet(root, iso) {
+    const add = el => el && root.appendChild(el);
+    if (!state.type) { add(refsEl(iso)); add(mixLine(iso)); }
+    const missing = [];
+    let shown = 0;
+    for (const t of types) {
+      if (state.type && state.type !== t.key) continue;
+      const list = cards.filter(c => c.countries.includes(iso) && c.types.includes(t.key));
+      const trainers = countryApps(iso, t.key);
+      if (!list.length && !trainers.length) { missing.push(t.label); continue; }
+      shown++;
+      const s = Object.assign(document.createElement('section'), { className: 'clue' });
+      s.dataset.type = t.key;
+      const top = Object.assign(document.createElement('div'), { className: 'top' });
+      top.appendChild(Object.assign(document.createElement('h3'), { textContent: t.label }));
+      trainers.forEach(a => top.appendChild(trainerLink(a, iso)));
+      s.appendChild(top);
+      if (list.length) {
+        const box = Object.assign(document.createElement('div'), { className: 'thumbs' });
+        list.filter(c => !c.group).forEach(c => box.appendChild(thumbEl(c)));
+        for (const [g, items] of groupBy(list.filter(c => c.group), c => [c.group])) {
+          box.appendChild(Object.assign(document.createElement('span'), { className: 'grp', textContent: g }));
+          items.forEach(c => box.appendChild(thumbEl(c)));
+        }
+        s.appendChild(box);
+      }
+      root.appendChild(s);
+    }
+    const none = Object.assign(document.createElement('p'), { className: 'none' });
+    none.textContent = state.type ? (shown ? '' : `No “${typeLabel[state.type]}” card or trainer for this country.`)
+      : shown ? (author && missing.length ? 'Nothing yet: ' + missing.join(', ') : '')
+      : 'No card and no trainer for this country yet.';
+    if (none.textContent) root.appendChild(none);
+  }
+
+  // Nouveautés : fiches ajoutées (date du fichier, écrite par build.py) depuis la visite précédente ; à la première visite, les 14 derniers jours
+  const dayStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const SEEN = (() => {
+    const today = dayStr(new Date());
+    let s = store.get('seen', null);
+    if (!s || typeof s !== 'object' || typeof s.now !== 'string') s = { last: null, now: today };
+    else if (s.now !== today) s = { last: s.now, now: today };
+    store.set('seen', s);
+    return s;
+  })();
+  function newEl() {
+    const first = !SEEN.last, since = SEEN.last || dayStr(new Date(Date.now() - 14 * 86400000));
+    const list = cards.filter(c => typeof c.added === 'string' && c.added > since).sort((a, b) => b.added.localeCompare(a.added));
+    if (!list.length) return null;
+    const s = Object.assign(document.createElement('section'), { className: 'new' });
+    s.innerHTML = `<h2>${first ? 'Added recently' : 'New since your last visit'}</h2>`;
+    const box = Object.assign(document.createElement('div'), { className: 'thumbs' });
+    list.slice(0, 12).forEach(c => {
+      const b = thumbEl(c), where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.length > 2 ? `${c.countries.length} countries` : c.countries.map(nameOf).join(', ');
+      b.querySelector('span').textContent = `${where} · ${c.title || c.types.map(t => typeLabel[t]).join(', ')}`;
+      box.appendChild(b);
+    });
+    s.appendChild(box);
+    if (list.length > 12) s.appendChild(Object.assign(document.createElement('p'), { className: 'none', textContent: `and ${list.length - 12} more` }));
     return s;
   }
 
@@ -1251,21 +1450,6 @@
     return s;
   }
 
-  function renderBoard() {
-    const board = $('board');
-    board.innerHTML = '';
-    if (!$('app').classList.contains('board-mode')) return;
-    visible = [];   // la navigation suit l'ordre de la planche
-    const t = selectionTitle();
-    if (!t) return;
-    board.appendChild(header(t[0], t[1], [
-      [state.country ? 'See the map' : 'See the coverage', () => { state.view = 'map'; update(); }],
-      closeBtn(reset),
-    ]));
-    if (state.cluster) board.appendChild(membersEl());
-    fillBoard(board);
-  }
-
   // ---------- Visionneuse ----------
   const lb = $('lightbox'), stage = $('stage'), img = $('lbimg');
   let cur = null, view = { s: 1, x: 0, y: 0 }, lbDrag = null;
@@ -1299,7 +1483,7 @@
       full.addEventListener('error', () => { if (cur === c) $('lbmsg').textContent = 'Original not found: run build.cmd again'; }, { once: true });
     }
     const where = c.cluster ? clusters[c.cluster].label : c.world ? 'World' : c.countries.map(nameOf).join(', ');
-    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${c.lowres ? ', low resolution' : ''}</small>`;
+    $('lbtitle').innerHTML = `${where}<small>${c.types.map(t => typeLabel[t]).join(', ')}${c.group ? ', ' + c.group : ''}${c.title ? ', ' + c.title : ''}${author && c.lowres ? ', low resolution' : ''}</small>`;
     // Provenance (sources.json, injecté par build.py) : qui l'a faite, d'après quoi, sous quelle licence
     if (c.src) {
       const s = Object.assign(document.createElement('span'), { className: 'src' });
@@ -1316,6 +1500,7 @@
     paintInv();
     paintStrip();
     lb.classList.add('open');
+    syncHash(false);
     fit();
   }
   function paintStrip() {
@@ -1332,7 +1517,7 @@
     }
     strip.querySelector('.cur')?.scrollIntoView({ inline: 'center', block: 'nearest' });
   }
-  const closeLb = () => lb.classList.remove('open');
+  const closeLb = () => { lb.classList.remove('open'); syncHash(false); };
   const step = d => { const i = visible.indexOf(cur) + d; if (visible[i]) openLb(visible[i]); };
   function toggleInv() {
     if (!dark) { dark = true; store.set('dark', true); invOverride[cur.id] = true; }
@@ -1397,39 +1582,60 @@
   });
 
   // Lien direct #iso (ex. #in) : la fiche pays suit l'adresse, et l'adresse suit la fiche
-  const isoFromHash = () => {
-    const h = decodeURIComponent(location.hash.slice(1)).toUpperCase();
-    return /^[A-Z]{2}$/.test(h) && (W.names[h] || W.namesEn[h]) ? h : null;
-  };
+  // Adresse = état : #pl, #pl/plate, #t/plate, #c/cyrillic, #c/cyrillic/plate ; une fiche ouverte ajoute @clé (clé courte tirée de son identifiant)
+  const cardKey = c => { let h = 2166136261; for (const ch of c.id) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+  const cardByKey = Object.fromEntries(cards.map(c => [cardKey(c), c]));
+  function parseHash() {
+    let h = location.hash.slice(1);
+    try { h = decodeURIComponent(h); } catch (e) {}
+    const at = h.indexOf('@'), key = at >= 0 ? h.slice(at + 1) : '', parts = (at >= 0 ? h.slice(0, at) : h).split('/');
+    const out = { country: null, type: null, cluster: null, card: cardByKey[key] || null };
+    const typeOf = t => (t && typeLabel[t.toLowerCase()] ? t.toLowerCase() : null);
+    const a = parts[0] || '';
+    if (a.toLowerCase() === 't') out.type = typeOf(parts[1]);
+    else if (a.toLowerCase() === 'c') { if (clusters[(parts[1] || '').toLowerCase()]) { out.cluster = parts[1].toLowerCase(); out.type = typeOf(parts[2]); } }
+    else if (/^[a-z]{2}$/i.test(a) && (W.names[a.toUpperCase()] || W.namesEn[a.toUpperCase()])) { out.country = a.toUpperCase(); out.type = typeOf(parts[1]); }
+    return out;
+  }
+  const isoFromHash = () => parseHash().country;
+  function hashOf() {
+    const base = state.country ? state.country.toLowerCase() + (state.type ? '/' + state.type : '')
+      : state.cluster ? 'c/' + state.cluster + (state.type ? '/' + state.type : '')
+      : state.type ? 't/' + state.type : '';
+    const open = lb.classList.contains('open') && cur ? '@' + cardKey(cur) : '';
+    return base || open ? '#' + base + open : '';
+  }
   function syncHash(push) {
-    const want = state.country ? '#' + state.country.toLowerCase() : '';
-    if (location.hash.toLowerCase() === want) return;
+    const want = hashOf();
+    let have = location.hash; try { have = decodeURIComponent(have); } catch (e) {}
+    if (have === want) return;
     history[push ? 'pushState' : 'replaceState'](null, '', want || location.pathname + location.search);
   }
-  // Retour / Avancer, ou adresse modifiée à la main : l'état suit l'adresse, sans ajouter d'entrée
-  window.addEventListener('popstate', () => {
-    const iso = isoFromHash();
-    if (iso === state.country) return;
-    if (iso) { Object.assign(state, { country: iso, cluster: null, view: 'map' }); update(); fitTo(iso); }
-    else { state.country = null; update(); }
-  });
+  // L'état suit l'adresse (au chargement, Retour / Avancer, adresse modifiée à la main), sans ajouter d'entrée
+  function applyHash(first) {
+    const h = parseHash(), moved = h.country !== state.country;
+    Object.assign(state, { country: h.country, type: h.type, cluster: h.cluster });
+    if (h.card) { update(); openLb(h.card, visible.includes(h.card) ? null : [h.card]); }
+    else { if (lb.classList.contains('open')) lb.classList.remove('open'); update(); }
+    if (h.country && (moved || first)) fitTo(h.country);
+  }
+  window.addEventListener('popstate', () => applyHash(false));
   // Échap ferme une couche à la fois : menu, planche, pays ou cluster, puis filtre de type
   function escapeLayer() {
     if ($('tools').classList.contains('open')) return setMenu(false);
-    if (state.view === 'board' && selectionTitle()) { state.view = 'map'; return update(); }
     if (state.country || state.cluster) { state.country = state.cluster = null; return update(); }
     if (state.type) { state.type = null; update(); }
   }
 
   function update() {
     WD = null;
-    $('app').classList.toggle('board-mode', state.view === 'board' && !!selectionTitle());
-    renderChips(); paintMap(); renderLegend(); renderPanel(); renderBoard();
+    const app = $('app'), wide = effWide(), before = app.className;
+    app.classList.toggle('w1', wide === 1); app.classList.toggle('w2', wide === 2);
+    renderClues(); paintMap(); renderLegend(); renderPanel();
+    if (app.className !== before) applyVb();          // la carte a changé de taille
     syncHash(pushNext); pushNext = false;
   }
-  if (isoFromHash()) Object.assign(state, { country: isoFromHash(), view: 'map' });
-  update();
-  if (state.country) fitTo(state.country);
+  applyHash(true);
 })();
 </script>
 </body>
