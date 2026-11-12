@@ -139,6 +139,11 @@ def static_checks(name, root):
         missing = [e["file"] for e in data.get("entries", []) if e.get("file") and not (root / idir / e["file"]).exists()]
         if missing:
             errs.append(f"bollards : {len(missing)} image(s) absente(s), ex. {missing[:3]}")
+    import shell
+    if name in shell.TRAINERS:                        # bande de liens vers l'Atlas : à jour avec Atlas/tools/shell.py ?
+        stale = shell.check_trainers(root.parent, only=name)
+        if stale:
+            errs.append(f"bande Atlas désynchronisée : {', '.join(stale)} (relancer build.cmd dans l'Atlas)")
     if name == "Atlas":
         import shell                                   # barre commune des six pages : à jour avec tools/shell.py ?
         stale = shell.check(root)

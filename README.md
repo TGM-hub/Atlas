@@ -63,6 +63,8 @@ Les six pages portent la même barre, au même endroit : « Atlas » (retour à 
 
 ## Outils
 `build.cmd` (fiches, `data.js`, `tgm-core.js` recopié dans les trainers), `publish-all.cmd` (tests de fumée `tools\smoke.py` puis publication repo par repo), `check-links.cmd`, `tools\pwa.py` (hors ligne + installation).
+
+Bande Atlas des trainers : `tools\shell.py` écrit aussi, dans chaque trainer listé dans `TRAINERS`, la bande de liens (Atlas, Daily review, Mix-ups, cartes) entre les marqueurs `tgm-shell:*` de son `index.html`. `build.cmd` la régénère, `tools\smoke.py` refuse un trainer désynchronisé, `py tools\test_trainers.py` la teste. Pour l'instant : phone-codes et bollards-trainer.
 `tools\shell.py` : barre et styles communs des six pages (relancé par `build.cmd` ; `py tools\shell.py --check` dit si une page a divergé, et `smoke.py` le vérifie).
 
 ## En-tête et filtre

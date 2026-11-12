@@ -138,6 +138,7 @@ tgm_core.build(apps, problems, warnings)
 import shell  # noqa: E402
 try:
     shell.apply(ROOT, quiet=True)
+    shell.apply_trainers(quiet=True)          # la bande Atlas des trainers voisins (repos présents seulement)
 except shell.ShellError as e:
     problems.append(str(e))
 
