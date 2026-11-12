@@ -26,8 +26,8 @@ class Server(ThreadingHTTPServer):
             super().handle_error(request, client_address)
 
 
-def page(repo, width=1440, height=900, hash="", errors=None):
-    ctx = BROWSER.new_context(viewport={"width": width, "height": height}, service_workers="block")
+def page(repo, width=1440, height=900, hash="", errors=None, scheme="dark"):
+    ctx = BROWSER.new_context(viewport={"width": width, "height": height}, service_workers="block", color_scheme=scheme)
     ctx.route(lambda url: not url.startswith(BASE), lambda r: r.fulfill(status=200, content_type="text/html", body=""))   # never leave the machine
     p = ctx.new_page(); p.set_default_timeout(5000)
     if errors is not None:
@@ -161,6 +161,57 @@ def t_bollards_fits_a_phone():
     assert p.evaluate("(() => { const r = document.getElementById('mSet').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; })()")
     p.click(".tgm-maps > summary"); p.wait_for_timeout(150)
     assert p.evaluate("(() => { const r = document.querySelector('.tgm-pop').getBoundingClientRect(); return r.width > 150 && r.left >= 0 && r.right <= innerWidth; })()")
+
+
+# ---------------------------------------------------------------- D2 the other trainers
+# repo: (address that opens a country, the country the links must then follow, number of links in the maps list or None, name of the accent variable or None)
+OTHERS = {
+    "city-placer": ("#explore/fr", "fr", True, None),
+    "plate-trainer": ("#fr", "fr", True, "--accent"),
+    "script-identifier-geoguessr": ("#fr", "fr", True, "--amber"),
+    "indonesia-kabupaten": ("", "id", True, None),
+    "vietnam-province-guesser": ("", "vn", True, "--amber"),
+    "clue-fusion": ("#explore/fr", "fr", False, "--sign"),
+    "russian-pannels-learning": ("#explore/ru", "ru", True, None),
+}
+
+
+def _other(repo):
+    hash, iso, maps, accent = OTHERS[repo]
+    errs = []; p = page(repo, errors=errs); s = strip(p)
+    assert [l[0] for l in s["links"]] == ["Atlas", "Daily review", "Mix-ups"], s
+    assert all(l[1:] == [28, 28, True] for l in s["links"]) and s["text"] == "" and s["maps"] == maps, s
+    assert not maps or s["items"] > 0, s
+    assert p.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(18, 40, 58)"
+    if accent:
+        assert p.evaluate("getComputedStyle(document.documentElement).getPropertyValue(%r).trim().toLowerCase()" % accent) == "#f2c94c"
+    p = page(repo, hash=hash, errors=errs)
+    assert press(p, "Atlas") == SITE + "#" + iso and press(p, "Mix-ups") == SITE + "confusions.html#" + iso, press(p, "Atlas")
+    assert p.get_attribute(".tgm-nav > a[aria-label='Daily review']", "href") == SITE + "daily.html"
+    p = page(repo, 390, 844, errors=errs)
+    assert p.evaluate("document.documentElement.scrollWidth <= innerWidth"), p.evaluate("document.documentElement.scrollWidth")
+    assert p.evaluate("(() => { const r = document.querySelector('.tgm-nav').getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.height > 0; })()")
+    if maps:
+        p.click(".tgm-maps > summary"); p.wait_for_timeout(150)
+        assert p.evaluate("(() => { const r = document.querySelector('.tgm-pop').getBoundingClientRect(); return r.width > 150 && r.left >= 0 && r.right <= innerWidth; })()")
+    assert errs == [], errs
+
+
+def t_city_placer(): _other("city-placer")
+def t_plate_trainer(): _other("plate-trainer")
+def t_sign_reader(): _other("script-identifier-geoguessr")
+def t_indonesia_kabupaten(): _other("indonesia-kabupaten")
+def t_vietnam_provinces(): _other("vietnam-province-guesser")
+def t_clue_fusion(): _other("clue-fusion")
+def t_cyrillic_signs(): _other("russian-pannels-learning")
+
+
+def t_indonesia_template_matches_the_page():
+    """index.html is built from src/template.html: both carry the same generated strip."""
+    import re
+    def blocks(f): return re.findall(r"<!-- tgm-shell:(\w+) -->(.*?)<!-- /tgm-shell:\1 -->", (HOME / "indonesia-kabupaten" / f).read_text(encoding="utf-8"), re.S)
+    a, b = blocks("src/template.html"), blocks("index.html")
+    assert a == b and [k for k, _ in a] == ["css", "links", "maps", "js"], [k for k, _ in a]
 
 
 # ---------------------------------------------------------------- runner

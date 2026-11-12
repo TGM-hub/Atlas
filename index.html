@@ -177,9 +177,10 @@
   section.clue { padding: 9px 0 10px; border-top: 1px solid #274355; }
   section.clue .top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
   section.clue h3 { margin: 0 auto 0 0; font-size: 16px; font-weight: 600; color: var(--sign); }
-  section.clue .app { padding: 3px 8px; gap: 7px; border-color: #4f7f8f; background: rgba(79,127,143,.22); font-size: 14px; font-weight: 600; white-space: nowrap; }
-  section.clue .app:hover { border-color: var(--sign); background: rgba(79,127,143,.36); }
-  section.clue .acc { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .trainers { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .trainers .app { padding: 3px 8px; gap: 7px; border-color: #4f7f8f; background: rgba(79,127,143,.22); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .trainers .app:hover { border-color: var(--sign); background: rgba(79,127,143,.36); }
+  .trainers .acc { font-weight: 600; font-variant-numeric: tabular-nums; }
   .thumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: 8px; }
   .thumbs .grp { align-self: center; padding: 2px 7px; border: 1px solid #33505f; border-radius: 3px; font-size: 13px; color: var(--muted); }
   .thumb { display: inline-flex; flex-direction: column; padding: 0; border-radius: 4px; overflow: hidden; background: #16303f; text-align: left; max-width: 100%; }
@@ -1318,20 +1319,27 @@
   }
   function countrySheet(root, iso) {
     const add = el => el && root.appendChild(el);
-    if (!state.type) { add(refsEl(iso)); add(mixLine(iso)); }
+    if (!state.type) add(refsEl(iso));
+    // Trainers du pays : une seule rangée, en haut, toujours dans l'ordre d'apps.json
+    const mine = countryApps(iso, state.type);
+    if (mine.length) {
+      const row = Object.assign(document.createElement('div'), { className: 'trainers' });
+      mine.forEach(a => row.appendChild(trainerLink(a, iso)));
+      add(row);
+    }
+    if (!state.type) add(mixLine(iso));
     const missing = [];
     let shown = 0;
     for (const t of types) {
       if (state.type && state.type !== t.key) continue;
       const list = cards.filter(c => c.countries.includes(iso) && c.types.includes(t.key));
       const trainers = countryApps(iso, t.key);
-      if (!list.length && !trainers.length) { missing.push(t.label); continue; }
+      if (!list.length) { if (trainers.length) shown += !!state.type; else missing.push(t.label); continue; }
       shown++;
       const s = Object.assign(document.createElement('section'), { className: 'clue' });
       s.dataset.type = t.key;
       const top = Object.assign(document.createElement('div'), { className: 'top' });
       top.appendChild(Object.assign(document.createElement('h3'), { textContent: t.label }));
-      trainers.forEach(a => top.appendChild(trainerLink(a, iso)));
       s.appendChild(top);
       if (list.length) {
         const box = Object.assign(document.createElement('div'), { className: 'thumbs' });
@@ -1346,7 +1354,7 @@
     }
     const none = Object.assign(document.createElement('p'), { className: 'none' });
     none.textContent = state.type ? (shown ? '' : `No “${typeLabel[state.type]}” card or trainer for this country.`)
-      : shown ? (author && missing.length ? 'Nothing yet: ' + missing.join(', ') : '')
+      : shown || mine.length ? (author && missing.length ? 'Nothing yet: ' + missing.join(', ') : '')
       : 'No card and no trainer for this country yet.';
     if (none.textContent) root.appendChild(none);
   }

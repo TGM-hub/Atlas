@@ -152,7 +152,7 @@ def t_country_facts():
 
 def t_trainer_rows_do_not_repeat_country():
     p = page(1440, 900, "#id")
-    links = p.evaluate("[...document.querySelectorAll('#panel section.clue a.app')].map(s => s.textContent)")
+    links = p.evaluate("[...document.querySelectorAll('#panel .trainers a.app')].map(s => s.textContent)")
     assert links and all("· Indonesia" not in s for s in links), links
 
 
@@ -383,15 +383,13 @@ def rows(p):
 
 def t_country_rows_by_clue():
     r = rows(page(1440, 900, "#pl"))
-    assert [x["t"] for x in r] == ["Language", "Architecture", "Plates", "Bollards", "Signs", "Road lines", "Phone codes", "Cities"], [x["t"] for x in r]
-    lang = r[0]; assert lang["cards"] == 3 and any(a.startswith("Sign Reader") for a in lang["apps"]) and any(a.startswith("Clue Fusion") for a in lang["apps"]), lang
-    assert r[3]["cards"] == 0 and r[3]["apps"][0].startswith("Bollards")
-    assert r[7]["apps"][0].startswith("City Placer")
+    assert [x["t"] for x in r] == ["Language", "Architecture", "Road lines", "Phone codes"], [x["t"] for x in r]      # only clues with cards; trainers sit in their own row
+    assert r[0]["cards"] == 3 and all(x["cards"] and not x["apps"] for x in r), r
 
 
 def t_cards_visible_without_scrolling():
     p = page(1440, 900, "#id")
-    top = p.evaluate("document.querySelector('#panel .thumb').getBoundingClientRect().top"); assert top < 400, top          # was 668 (about 345 when the clue row fits one line)
+    top = p.evaluate("document.querySelector('#panel .thumb').getBoundingClientRect().top"); assert top < 460, top          # was 668 before lot B; the trainers row sits above the cards
     # cards whose picture is at least half on screen (before lot B: 1). Fonts change the exact heights, so the message lists where they sit.
     tops = p.evaluate("[...document.querySelectorAll('#panel .thumb img')].map(i => Math.round(i.getBoundingClientRect().top + i.getBoundingClientRect().height / 2))")
     n = len([y for y in tops if y < 900]); assert n >= 3, f"{n} cards on screen, picture centres at {tops}"
@@ -413,8 +411,24 @@ def t_empty_and_trainer_only_countries():
     errs = []; p = page(1440, 900, "#ve", errors=errs)
     assert rows(p) == [] and p.inner_text("#panel .none") == "No card and no trainer for this country yet."
     p = page(1440, 900, "#fr", errors=errs); r = rows(p)
-    assert r and all(x["cards"] == 0 and x["apps"] for x in r) and p.inner_text("#panel .none").startswith("Nothing yet: ")
+    assert r == [] and p.evaluate("document.querySelectorAll('#panel .trainers a.app').length") == 4 and p.inner_text("#panel .none").startswith("Nothing yet: ")
     assert "images\\" not in p.inner_text("#panel") and errs == []
+
+
+def t_trainers_row_keeps_its_place():
+    """One row of trainers at the top of the country page, same order everywhere, never inside the clue sections."""
+    order = None
+    js = """() => { const r = document.querySelector('#panel .trainers'), s = document.querySelector('#panel section.clue');
+      return { names: [...r.querySelectorAll('a.app')].map(a => a.textContent.split('↗')[0].trim()), y: r.getBoundingClientRect().bottom,
+        before: !s || !!(r.compareDocumentPosition(s) & 4), inside: document.querySelectorAll('#panel section.clue a.app').length,
+        all: (window.ATLAS.apps || []).map(a => a.name.en) }; }"""
+    for iso in ("ph", "fr", "pl", "id"):
+        p = page(1440, 900, "#" + iso); d = p.evaluate(js)
+        assert d["names"] and len(set(d["names"])) == len(d["names"]) and d["before"] and d["inside"] == 0, (iso, d)
+        assert d["y"] < 420, (iso, d["y"])
+        ranks = [d["all"].index(n) for n in d["names"]]; assert ranks == sorted(ranks), (iso, d["names"])
+    p = page(1440, 900, "#ph/plate"); d = p.evaluate(js)
+    assert d["names"] == ["Plate Trainer", "Clue Fusion"] and not p.query_selector("#panel .none"), d
 
 
 def t_two_type_card_once_in_viewer():

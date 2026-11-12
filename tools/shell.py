@@ -144,9 +144,17 @@ import re
 HOME = Path(os.environ.get("SMOKE_HOME") or Path.home())
 SITE = "https://tgm-hub.github.io/Atlas/"
 HASH_ISO = "(location.hash.match(/^#([a-z]{2})$/i) || [])[1]"
+HASH_ANY = "(location.hash.match(/^#(?:explore\\/|r-)?([a-z]{2})$/i) || [])[1]"      # #fr, #explore/fr, #r-us
 TRAINERS = {
     "phone-codes": {"files": ["index.html"], "iso": "typeof C !== 'undefined' && C && C.iso"},
     "bollards-trainer": {"files": ["index.html"], "iso": HASH_ISO},
+    "city-placer": {"files": ["index.html"], "iso": HASH_ANY},
+    "plate-trainer": {"files": ["index.html"], "iso": HASH_ANY},
+    "script-identifier-geoguessr": {"files": ["index.html"], "iso": HASH_ANY},
+    "indonesia-kabupaten": {"files": ["src/template.html", "index.html"], "iso": "'id'"},      # index.html est construit depuis le gabarit
+    "vietnam-province-guesser": {"files": ["index.html"], "iso": "'vn'"},
+    "clue-fusion": {"files": ["index.html"], "iso": HASH_ANY},
+    "russian-pannels-learning": {"files": ["index.html"], "iso": HASH_ANY},
 }
 
 _SVG = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">{}</svg>'
@@ -167,6 +175,7 @@ TRAINER_CSS = """<style id="tgm-shell">
 .tgm-maps>summary{list-style:none}
 .tgm-maps>summary::-webkit-details-marker{display:none}
 .tgm-pop{position:absolute;top:34px;left:0;z-index:9999;box-sizing:border-box;width:min(360px,calc(100vw - 24px));background:#0e2130;color:#e6eef2;border:1px solid #3b5a6d;border-radius:6px;padding:10px 12px;box-shadow:0 8px 24px #0006;font:13px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:left;white-space:normal}
+.tgm-maps:not([open])>.tgm-pop{display:none}
 .tgm-pop b{display:block;font-size:13px;margin-bottom:6px}
 .tgm-pop a{display:inline;width:auto;height:auto;border:0;opacity:1;color:#e6eef2;text-decoration:none}
 .tgm-pop a:hover{color:#f2c94c}
